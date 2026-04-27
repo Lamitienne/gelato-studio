@@ -1175,3 +1175,25 @@ select:focus, input:focus, textarea:focus {
 }
 [data-theme="dark"] .form-filter-btn[data-form-filter="T"] .ff-tag { color: #e8c977; }
 [data-theme="dark"] .form-filter-btn[data-form-filter="F"] .ff-tag { color: #8fc4e0; }
+
+/* ============== MENGEN-EINGABE (Quick-Entry Flow) ============== */
+#ing-qty-wrap:not([hidden]) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+#ing-qty-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ing-qty-input { width: 100px; }
+#ing-qty-cancel {
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}

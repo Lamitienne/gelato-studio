@@ -72,7 +72,12 @@
               <h2>Zutaten</h2>
               <div class="card-tools">
                 <input type="search" id="ing-search" placeholder="Zutat suchen…" autocomplete="off" />
-<button class="btn-ghost" id="add-ingredient-row">+ Zeile</button>
+                <div id="ing-qty-wrap" hidden>
+                  <span id="ing-qty-label"></span>
+                  <input type="number" id="ing-qty-input" placeholder="Menge (g)" step="0.1" min="0" inputmode="decimal" />
+                  <button class="btn-ghost" id="ing-qty-cancel" type="button" aria-label="Abbrechen">✕</button>
+                </div>
+                <button class="btn-ghost" id="add-ingredient-row">+ Zeile</button>
               </div>
               <div class="autocomplete" id="autocomplete" hidden></div>
             </div>

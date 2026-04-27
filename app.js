@@ -512,6 +512,7 @@ function generateAdvice(r, targets) {
 
 /* ============== AUTOCOMPLETE ============== */
 let acIndex = -1;
+let pendingIngId = null;
 function renderAutocomplete(query) {
   const ac = $("#autocomplete");
   if (!query || query.length < 1) {
@@ -533,10 +534,7 @@ function renderAutocomplete(query) {
   ac.querySelectorAll(".autocomplete-item").forEach(el => {
     el.addEventListener("mousedown", e => {
       e.preventDefault();
-      addRow(el.dataset.id);
-      $("#ing-search").value = "";
-      ac.hidden = true;
-      acIndex = -1;
+      selectIngredient(el.dataset.id);
     });
   });
 }
@@ -544,6 +542,29 @@ function renderAutocomplete(query) {
 function addRow(ingId, qty = 0) {
   state.current.rows.push({ ingId, qty });
   renderIngredientRows();
+}
+
+function selectIngredient(id) {
+  const ing = findIngredient(id);
+  if (!ing) return;
+  const search = $("#ing-search");
+  search.value = "";
+  $("#autocomplete").hidden = true;
+  acIndex = -1;
+  pendingIngId = id;
+  $("#ing-qty-label").textContent = ing.name + ":";
+  $("#ing-qty-input").value = "";
+  $("#ing-qty-wrap").hidden = false;
+  search.hidden = true;
+  setTimeout(() => $("#ing-qty-input").focus(), 0);
+}
+
+function resetIngSearch() {
+  pendingIngId = null;
+  $("#ing-qty-input").value = "";
+  $("#ing-qty-wrap").hidden = true;
+  $("#ing-search").hidden = false;
+  $("#ing-search").focus();
 }
 
 /* ============== RENDER: REZEPTBUCH ============== */
@@ -1003,10 +1024,7 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
     } else if (e.key === "Enter" && acIndex >= 0) {
       e.preventDefault();
       const id = items[acIndex].dataset.id;
-      addRow(id);
-      search.value = "";
-      ac.hidden = true;
-      acIndex = -1;
+      selectIngredient(id);
     } else if (e.key === "Escape") {
       ac.hidden = true;
       acIndex = -1;
@@ -1015,6 +1033,19 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
   search.addEventListener("blur", () => {
     setTimeout(() => $("#autocomplete").hidden = true, 150);
   });
+
+  const qtyInput = $("#ing-qty-input");
+  qtyInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!pendingIngId) return;
+      addRow(pendingIngId, parseFloat(qtyInput.value) || 0);
+      resetIngSearch();
+    } else if (e.key === "Escape") {
+      resetIngSearch();
+    }
+  });
+  $("#ing-qty-cancel").addEventListener("click", resetIngSearch);
 
   // Library search
   const libSearch = $("#library-search");
