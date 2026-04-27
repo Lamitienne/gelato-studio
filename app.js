@@ -547,40 +547,163 @@ function addRow(ingId, qty = 0) {
 }
 
 /* ============== RENDER: REZEPTBUCH ============== */
+function getOverallStatus(calc, type) {
+  if (!calc || calc.total <= 0) return "";
+  const targets = TARGETS[type].metrics;
+  let bad = 0, warn = 0;
+  for (const key of ["ts", "fett", "zucker", "pac", "pod"]) {
+    const s = evaluateMetric(calc[key], targets[key]);
+    if (s === "bad") bad++;
+    else if (s === "warn") warn++;
+  }
+  return bad > 0 ? "bad" : warn > 0 ? "warn" : "ok";
+}
+
+function fmtDate(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric" });
+}
+
+const CARD_PLACEHOLDERS = {
+  milcheis: `<svg viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="40" cy="32" r="24" fill="#fdf0d0" stroke="#c8a96a" stroke-width="1.5"/>
+    <path d="M16 46 L40 90 L64 46 Z" fill="#d4a44a" stroke="#a07a3d" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M22 52 L58 52 M19 60 L61 60 M21 68 L59 68 M25 76 L55 76" stroke="#a07a3d" stroke-width="0.75" opacity="0.45"/>
+    <path d="M34 46 L46 90 M40 46 L40 90 M46 46 L34 90" stroke="#a07a3d" stroke-width="0.75" opacity="0.45"/>
+  </svg>`,
+  fruchteis: `<svg viewBox="0 0 60 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="13" y="10" width="34" height="56" rx="17" fill="#f4914a" stroke="#c0552a" stroke-width="1.5"/>
+    <rect x="18" y="15" width="10" height="22" rx="5" fill="white" opacity="0.25"/>
+    <rect x="26" y="62" width="8" height="26" rx="4" fill="#d4a44a" stroke="#a07a3d" stroke-width="1"/>
+  </svg>`
+};
+
+function compressImage(file, maxW = 600, maxH = 400, quality = 0.78) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, maxW / img.width, maxH / img.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error()); };
+    img.src = objectUrl;
+  });
+}
+
 function renderLibrary() {
   const grid = $("#library-grid");
-  if (!state.recipes.length) {
-    grid.innerHTML = `<div class="empty-state">
-      <h3>Noch keine Rezepte</h3>
-      <p>Erstelle ein Rezept und speichere es — es erscheint hier.</p>
-    </div>`;
+  const searchEl = $("#library-search");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
+
+  const all = [...state.recipes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const filtered = q
+    ? all.filter(r =>
+        (r.title || "").toLowerCase().includes(q) ||
+        (TARGETS[r.type]?.label || "").toLowerCase().includes(q) ||
+        (r.notes || "").toLowerCase().includes(q))
+    : all;
+
+  if (!filtered.length) {
+    grid.innerHTML = q
+      ? `<div class="empty-state"><h3>Keine Treffer</h3><p>Kein Rezept passt zu „${escapeHtml(q)}".</p></div>`
+      : `<div class="empty-state"><h3>Noch keine Rezepte</h3><p>Erstelle ein Rezept und speichere es — es erscheint hier.</p></div>`;
     return;
   }
-  // newest first
-  const sorted = [...state.recipes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  grid.innerHTML = sorted.map(rec => {
+
+  const STATUS_LABELS = { ok: "Ausgewogen", warn: "Im Toleranzbereich", bad: "Außerhalb" };
+
+  grid.innerHTML = filtered.map(rec => {
     const calc = calculate(rec.rows);
+    const statusKey = rec.rows.length ? getOverallStatus(calc, rec.type) : "";
+    const statusLabel = STATUS_LABELS[statusKey] || "";
+
+    const topIngs = [...rec.rows]
+      .filter(r => r.qty > 0)
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 3)
+      .map(r => { const ing = findIngredient(r.ingId); return ing ? ing.name : null; })
+      .filter(Boolean);
+
+    const notesPreview = (rec.notes || "").split("\n")[0].trim().slice(0, 90);
+    const dateStr = fmtDate(rec.updatedAt || rec.createdAt);
+    const imgContent = rec.image
+      ? `<img src="${rec.image}" alt="${escapeHtml(rec.title || "")}" class="recipe-card-photo">`
+      : `<div class="recipe-card-placeholder">${CARD_PLACEHOLDERS[rec.type] || CARD_PLACEHOLDERS.milcheis}</div>`;
+
     return `
       <article class="recipe-card" data-id="${rec.id}">
-        <button class="delete" data-delete="${rec.id}" aria-label="Rezept löschen">×</button>
-        <h3>${escapeHtml(rec.title || "Ohne Titel")}</h3>
-        <div class="tags">
-          <span class="tag ${rec.type}">${TARGETS[rec.type].label}</span>
-          <span class="tag">${rec.rows.length} Zutaten</span>
+        <div class="recipe-card-img ${rec.type}" data-recipe-id="${rec.id}" title="${rec.image ? "Foto ändern" : "Foto hinzufügen"}">
+          ${imgContent}
+          <div class="recipe-card-img-overlay">
+            <span class="recipe-card-img-btn">${rec.image ? "Foto ändern" : "Foto hinzufügen"}</span>
+          </div>
         </div>
-        <div class="stats">
-          <span>TS <strong>${fmt(calc.ts, 1)}%</strong></span>
-          <span>Fett <strong>${fmt(calc.fett, 1)}%</strong></span>
-          <span>PAC <strong>${fmt(calc.pac, 0)}</strong></span>
-          <span>POD <strong>${fmt(calc.pod, 0)}</strong></span>
+        <div class="recipe-card-inner">
+          <button class="delete" data-delete="${rec.id}" aria-label="Rezept löschen">×</button>
+          <h3>${escapeHtml(rec.title || "Ohne Titel")}</h3>
+          <div class="tags">
+            <span class="tag ${rec.type}">${TARGETS[rec.type].label}</span>
+            <span class="tag">${rec.rows.length} Zutaten</span>
+            ${statusKey ? `<span class="status-pill ${statusKey}">${statusLabel}</span>` : ""}
+          </div>
+          ${topIngs.length ? `<div class="recipe-card-ings">${topIngs.map(n => `<span>${escapeHtml(n)}</span>`).join("")}</div>` : ""}
+          <div class="stats">
+            <span>TS <strong>${fmt(calc.ts, 1)}%</strong></span>
+            <span>Fett <strong>${fmt(calc.fett, 1)}%</strong></span>
+            <span>PAC <strong>${fmt(calc.pac, 0)}</strong></span>
+            <span>POD <strong>${fmt(calc.pod, 0)}</strong></span>
+          </div>
+          ${notesPreview ? `<p class="recipe-card-note">${escapeHtml(notesPreview)}</p>` : ""}
+          ${dateStr ? `<div class="recipe-card-footer"><span class="recipe-card-date">${dateStr}</span></div>` : ""}
         </div>
       </article>
     `;
   }).join("");
 
+  // Shared file input for photo uploads (created once per render call, recycled via id)
+  let imgInput = $("#library-img-input");
+  if (!imgInput) {
+    imgInput = document.createElement("input");
+    imgInput.type = "file";
+    imgInput.accept = "image/*";
+    imgInput.id = "library-img-input";
+    imgInput.hidden = true;
+    document.body.appendChild(imgInput);
+  }
+
+  $$(".recipe-card-img").forEach(imgDiv => {
+    imgDiv.addEventListener("click", e => {
+      e.stopPropagation();
+      const recipeId = imgDiv.dataset.recipeId;
+      imgInput.onchange = async () => {
+        const file = imgInput.files[0];
+        imgInput.value = "";
+        if (!file) return;
+        try {
+          const dataUrl = await compressImage(file);
+          const idx = state.recipes.findIndex(r => r.id === recipeId);
+          if (idx >= 0) {
+            state.recipes[idx].image = dataUrl;
+            if (state.current.id === recipeId) state.current.image = dataUrl;
+            saveRecipes();
+            renderLibrary();
+            showToast("Foto gespeichert");
+          }
+        } catch { showToast("Foto konnte nicht geladen werden"); }
+      };
+      imgInput.click();
+    });
+  });
+
   $$(".recipe-card").forEach(card => {
     card.addEventListener("click", e => {
-      if (e.target.closest("[data-delete]")) return;
+      if (e.target.closest("[data-delete]") || e.target.closest(".recipe-card-img")) return;
       loadRecipe(card.dataset.id);
     });
   });
@@ -892,6 +1015,10 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
   search.addEventListener("blur", () => {
     setTimeout(() => $("#autocomplete").hidden = true, 150);
   });
+
+  // Library search
+  const libSearch = $("#library-search");
+  if (libSearch) libSearch.addEventListener("input", () => renderLibrary());
 
   // Ingredients DB
   $("#add-custom-ing").addEventListener("click", addCustomIngredient);

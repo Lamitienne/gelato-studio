@@ -163,12 +163,17 @@
       <!-- ============== REZEPTBUCH ============== -->
       <section class="panel" data-panel="library" hidden>
         <div class="panel-head">
-          <h1>Rezeptbuch</h1>
-          <span class="hint">Lokal in deinem Browser gespeichert</span>
-          <div class="actions">
-            <button class="btn-ghost" id="import-recipes">↑ Importieren</button>
-            <button class="btn-ghost" id="export-recipes">↓ Exportieren</button>
-            <input type="file" id="import-file" accept=".json" hidden />
+          <div>
+            <h1>Rezeptbuch</h1>
+            <span class="hint">Lokal in deinem Browser gespeichert</span>
+          </div>
+          <div class="library-toolbar">
+            <input type="search" id="library-search" placeholder="Rezept suchen…" autocomplete="off" />
+            <div class="actions">
+              <button class="btn-ghost" id="import-recipes">↑ Importieren</button>
+              <button class="btn-ghost" id="export-recipes">↓ Exportieren</button>
+              <input type="file" id="import-file" accept=".json" hidden />
+            </div>
           </div>
         </div>
         <div class="library-grid" id="library-grid">

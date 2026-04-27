@@ -636,40 +636,119 @@ select:focus, input:focus, textarea:focus {
 }
 
 /* ============== LIBRARY ============== */
+.library-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.library-toolbar input[type="search"] { width: 200px; }
+
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: var(--space-4);
 }
+
 .recipe-card {
   background: var(--color-surface);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  padding: 0;
   cursor: pointer;
   transition: var(--transition);
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  position: relative;
+  overflow: hidden;
 }
 .recipe-card:hover {
   border-color: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+
+/* Photo / illustrated placeholder area */
+.recipe-card-img {
+  height: 148px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recipe-card-img.milcheis {
+  background: linear-gradient(160deg, #fdf0d0 0%, #f2e0a8 100%);
+}
+.recipe-card-img.fruchteis {
+  background: linear-gradient(160deg, #fde4cc 0%, #f8c898 100%);
+}
+.recipe-card-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.recipe-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  opacity: 0.75;
+}
+.recipe-card-placeholder svg {
+  height: 96px;
+  width: auto;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.09));
+}
+.recipe-card-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 8, 4, 0.44);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition);
+}
+.recipe-card-img:hover .recipe-card-img-overlay { opacity: 1; }
+.recipe-card-img-btn {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+}
+
+.recipe-card-inner {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  position: relative;
+}
+
 .recipe-card h3 {
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 600;
   letter-spacing: -0.01em;
+  padding-right: var(--space-8);
+  line-height: 1.25;
 }
 .recipe-card .tags {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-1);
 }
 .recipe-card .tag {
   background: var(--color-surface-offset);
@@ -678,17 +757,63 @@ select:focus, input:focus, textarea:focus {
 }
 .recipe-card .tag.milcheis { background: var(--color-primary-highlight); color: var(--color-primary); }
 .recipe-card .tag.fruchteis { background: var(--color-warning-bg); color: var(--color-warning); }
-.recipe-card .stats {
-  display: flex;
-  gap: var(--space-4);
+
+/* Smaller status pill inside card */
+.recipe-card .status-pill {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+}
+
+/* Top-3 ingredients preview */
+.recipe-card-ings {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  margin-top: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  line-height: 1.5;
+}
+.recipe-card-ings span + span::before {
+  content: " · ";
+  opacity: 0.5;
+}
+
+.recipe-card .stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 }
 .recipe-card .stats strong {
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
+
+/* Notes preview */
+.recipe-card-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.45;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-divider);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.recipe-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+.recipe-card-date {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
 .recipe-card .delete {
   position: absolute;
   top: var(--space-3);
