@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Eis-Bilanzierung nach Uwe Koch — PAC, POD, Trockenmasse und Zielbereiche für deine Eismaschine." />
+    <title>Gelato Studio · Eis bilanzieren</title>
+    <link rel="preconnect" href="https://api.fontshare.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=general-sans@500,600&display=swap" />
+    <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='13' r='9' fill='%23c8a96a'/><path d='M8 14 L16 30 L24 14 Z' fill='%23a07a3d'/></svg>" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 40 40" aria-label="Gelato Studio Logo" fill="none">
+          <circle cx="20" cy="16" r="11" fill="currentColor" opacity="0.18" />
+          <circle cx="20" cy="16" r="11" stroke="currentColor" stroke-width="1.5" />
+          <path d="M9 17 L20 36 L31 17 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M14 21 L20 32 L26 21" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5" />
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">Gelato Studio</span>
+          <span class="brand-sub">Eis bilanzieren · nach Uwe Koch</span>
+        </div>
+      </div>
+      <nav class="topnav">
+        <button class="tab" data-tab="recipe" aria-current="true">Rezept</button>
+        <button class="tab" data-tab="library">Rezeptbuch</button>
+        <button class="tab" data-tab="ingredients">Zutaten</button>
+        <button class="tab" data-tab="reference">Zielwerte</button>
+      </nav>
+      <button class="theme-toggle" data-theme-toggle aria-label="Modus wechseln"></button>
+    </header>
+
+    <main>
+      <!-- ============== REZEPT ============== -->
+      <section class="panel" data-panel="recipe">
+        <div class="panel-head">
+          <div>
+            <h1 id="recipe-title-display" contenteditable="true" spellcheck="false">Neues Rezept</h1>
+            <div class="meta-row">
+              <label class="select">
+                <span>Typ</span>
+                <select id="recipe-type">
+                  <option value="milcheis">Milcheis</option>
+                  <option value="fruchteis">Fruchteis</option>
+                </select>
+              </label>
+              <label class="select">
+                <span>Maschinenfüllung</span>
+                <select id="machine-cap">
+                  <option value="600">600 g · klein</option>
+                  <option value="800" selected>800 g · DOMO 1,5 L</option>
+                  <option value="1000">1000 g · groß</option>
+                </select>
+              </label>
+              <span class="hint">DOMO 1,5 L Trommel, ~50 % Volumen-Aufschlag → ca. 800 g Mix</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost" id="reset-recipe">Leeren</button>
+            <button class="btn-ghost" id="load-base" title="Fügt Milchbase 30 bzw. Fruchtbase 30 nach Uwe Koch ein">Milchbase 30 einfügen</button>
+            <button class="btn-primary" id="save-recipe">Speichern</button>
+          </div>
+        </div>
+
+        <div class="layout-2col">
+          <!-- LEFT: Zutaten -->
+          <div class="card">
+            <div class="card-head">
+              <h2>Zutaten</h2>
+              <div class="card-tools">
+                <input type="search" id="ing-search" placeholder="Zutat suchen…" autocomplete="off" />
+<button class="btn-ghost" id="add-ingredient-row">+ Zeile</button>
+              </div>
+              <div class="autocomplete" id="autocomplete" hidden></div>
+            </div>
+
+            <div class="scale-banner" id="scale-banner" hidden>
+              <div class="scale-banner-row">
+                <span class="scale-banner-label">Originalrezept</span>
+                <strong id="scale-original">0 g</strong>
+                <span class="scale-banner-arrow">→</span>
+                <span class="scale-banner-label">DOMO-Charge</span>
+                <strong id="scale-target">800 g</strong>
+                <span class="scale-banner-factor" id="scale-factor">Faktor 1,000×</span>
+              </div>
+              <div class="form-summary" id="form-summary">
+                <div class="form-pill form-pill-dry">
+                  <span class="form-pill-tag">T</span>
+                  <span class="form-pill-label">Trocken</span>
+                  <span class="form-pill-value" id="sum-dry-scaled">0 g</span>
+                  <span class="form-pill-orig" id="sum-dry-orig">(0 g orig.)</span>
+                </div>
+                <div class="form-pill form-pill-liquid">
+                  <span class="form-pill-tag">F</span>
+                  <span class="form-pill-label">Flüssig</span>
+                  <span class="form-pill-value" id="sum-liq-scaled">0 g</span>
+                  <span class="form-pill-orig" id="sum-liq-orig">(0 g orig.)</span>
+                </div>
+              </div>
+              <div class="form-filter" role="tablist" aria-label="Filter nach Form">
+                <button type="button" class="form-filter-btn is-active" data-form-filter="all">Alle</button>
+                <button type="button" class="form-filter-btn" data-form-filter="T"><span class="ff-tag">T</span> Trocken</button>
+                <button type="button" class="form-filter-btn" data-form-filter="F"><span class="ff-tag">F</span> Flüssig</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="ingredients-table">
+                <thead>
+                  <tr>
+                    <th class="col-form" title="Form: T = trocken, F = flüssig">F/T</th>
+                    <th>Zutat</th>
+                    <th class="num">Original (g)</th>
+                    <th class="num">Anteil</th>
+                    <th class="num">Für Charge (g)</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="ing-tbody">
+                  <!-- Zeilen dynamisch -->
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td></td>
+                    <td><strong>Summe</strong></td>
+                    <td class="num"><strong id="sum-mass">0 g</strong></td>
+                    <td class="num"><strong>100 %</strong></td>
+                    <td class="num"><strong id="sum-scaled">0 g</strong></td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <textarea id="recipe-notes" placeholder="Notizen zur Charge: Frucht, Aroma, Reifezeit, Resultat …"></textarea>
+          </div>
+
+          <!-- RIGHT: Bilanz -->
+          <div class="card">
+            <div class="card-head">
+              <h2>Bilanz</h2>
+              <span class="card-sub" id="target-label">Zielbereich: Milcheis</span>
+            </div>
+
+            <div class="metrics-grid" id="metrics-grid">
+              <!-- Metric cards dynamisch -->
+            </div>
+
+            <div class="balance-summary" id="balance-summary">
+              <div class="row">
+                <span>Status</span>
+                <span class="status-pill" id="overall-status">—</span>
+              </div>
+              <p class="hint" id="advice">Füge Zutaten hinzu, um die Bilanz zu berechnen.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== REZEPTBUCH ============== -->
+      <section class="panel" data-panel="library" hidden>
+        <div class="panel-head">
+          <h1>Rezeptbuch</h1>
+          <span class="hint">Lokal in deinem Browser gespeichert</span>
+          <div class="actions">
+            <button class="btn-ghost" id="import-recipes">↑ Importieren</button>
+            <button class="btn-ghost" id="export-recipes">↓ Exportieren</button>
+            <input type="file" id="import-file" accept=".json" hidden />
+          </div>
+        </div>
+        <div class="library-grid" id="library-grid">
+          <!-- Karten dynamisch -->
+        </div>
+      </section>
+
+      <!-- ============== ZUTATEN ============== -->
+      <section class="panel" data-panel="ingredients" hidden>
+        <div class="panel-head">
+          <div>
+            <h1>Zutaten-Datenbank</h1>
+            <span class="hint">Werte aus Uwe Koch „Eismanufaktur" und Standardtabellen. Eigene Zutaten anlegen oder bearbeiten.</span>
+          </div>
+          <button class="btn-primary" id="add-custom-ing">+ Eigene Zutat</button>
+        </div>
+        <div class="table-wrap">
+          <table class="db-table">
+            <thead>
+              <tr>
+                <th>Zutat</th>
+                <th>Kategorie</th>
+                <th class="num">TS %</th>
+                <th class="num">Fett %</th>
+                <th class="num">Zucker %</th>
+                <th class="num">PAC</th>
+                <th class="num">POD</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="db-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============== ZIELWERTE ============== -->
+      <section class="panel" data-panel="reference" hidden>
+        <div class="panel-head">
+          <h1>Zielbereiche</h1>
+          <span class="hint">Richtwerte für ausgewogenes Eis bei -14 bis -18 °C Serviertemperatur</span>
+        </div>
+        <div class="ref-grid">
+          <div class="card">
+            <h2>Milcheis</h2>
+            <ul class="ref-list" id="ref-milcheis"></ul>
+          </div>
+          <div class="card">
+            <h2>Fruchteis / Sorbet</h2>
+            <ul class="ref-list" id="ref-fruchteis"></ul>
+          </div>
+          <div class="card span-2">
+            <h2>Was bedeuten die Werte?</h2>
+            <dl class="glossary">
+              <dt>Milchbase 30 / Fruchtbase 30</dt>
+              <dd>Vorgemischte Trockenbasis nach U. Koch — 210 g Bindemittel, Dextrose, Glukose-Pulver (und bei Milchbase Magermilchpulver) pro 1 kg Mix. Ergänzen mit Milch/Sahne bzw. Frucht und Saccharose.</dd>
+              <dt>PAC · Potere Anti-Congelante</dt>
+              <dd>Gefrierhemmung. Je höher, desto weicher das Eis bei gleicher Temperatur. Saccharose = 100. Dextrose & Fruktose ≈ 190.</dd>
+              <dt>POD · Potere Dolcificante</dt>
+              <dd>Süßkraft, Saccharose als Referenz = 100. Dextrose nur 70 — daher gut zum Stützen ohne überzusüßen.</dd>
+              <dt>Trockenmasse (TS)</dt>
+              <dd>Alles außer Wasser. Zu wenig → grobe Eiskristalle, rau. Zu viel → schwer und sandig.</dd>
+              <dt>Fett</dt>
+              <dd>Macht cremig, bindet Aromen. Über 12 % wirkt fettig im Mund.</dd>
+              <dt>Stabilisatoren</dt>
+              <dd>Johannisbrotkernmehl + Guarkernmehl: zusammen 0,3-0,5 % der Mischung. Binden Wasser, halten kleine Kristalle.</dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  <script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="transform:translate(-${scrollX}px,-${scrollY}px);transform-origin:top left">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script></body>
+</html>
