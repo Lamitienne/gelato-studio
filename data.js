@@ -114,6 +114,187 @@ const TARGETS = {
    Die Vormisch-Rezeptur (Komponenten + Mengen) ist nur zur Info,
    damit du die Base einmal anrühren und aufbewahren kannst.
    ============================================================ */
+/* ============================================================
+   Beispielrezepte — werden beim ersten Start geladen wenn keine
+   eigenen Rezepte im Browser-Speicher vorhanden sind.
+   Alle Rezepte sind auf ~800 g Charge bilanziert.
+   Klassisch = traditionelle Sorten, Modern = neue Kombinationen.
+   ============================================================ */
+const DEFAULT_RECIPES = [
+  // -------- MILCHEIS — KLASSISCH --------
+  {
+    id: "example_vaniglia",
+    title: "Vaniglia Classica",
+    type: "milcheis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-milch",    qty: 24  },
+      { ingId: "vollmilch",     qty: 500 },
+      { ingId: "sahne35",       qty: 160 },
+      { ingId: "saccharose",    qty: 80  },
+      { ingId: "dextrose",      qty: 30  },
+      { ingId: "invertzucker",  qty: 15  },
+      { ingId: "vanille-mark",  qty: 3   }
+    ],
+    notes: "Klassisch · Vanillemark vor dem Pasteurisieren in die Milch einlegen und ziehen lassen.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_cioccolato",
+    title: "Cioccolato Fondente",
+    type: "milcheis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-milch",   qty: 24  },
+      { ingId: "vollmilch",    qty: 480 },
+      { ingId: "sahne35",      qty: 140 },
+      { ingId: "saccharose",   qty: 60  },
+      { ingId: "dextrose",     qty: 25  },
+      { ingId: "invertzucker", qty: 20  },
+      { ingId: "kakao",        qty: 30  },
+      { ingId: "schoko-70",    qty: 50  }
+    ],
+    notes: "Klassisch · Kakaopulver und Bitterschokolade in warmer Milch bei 50 °C auflösen, dann Base einrühren.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_nocciola",
+    title: "Nocciola",
+    type: "milcheis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-milch",       qty: 24  },
+      { ingId: "magermilch",       qty: 500 },
+      { ingId: "magermilchpulver", qty: 20  },
+      { ingId: "saccharose",       qty: 70  },
+      { ingId: "dextrose",         qty: 15  },
+      { ingId: "invertzucker",     qty: 20  },
+      { ingId: "haselnuss-pasta",  qty: 80  }
+    ],
+    notes: "Klassisch · Haselnusspaste bei ca. 40 °C einrühren. Magermilch statt Vollmilch kompensiert das hohe Fett der Paste.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_fiordilatte",
+    title: "Fior di Latte",
+    type: "milcheis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-milch",       qty: 24  },
+      { ingId: "vollmilch",        qty: 550 },
+      { ingId: "sahne35",          qty: 120 },
+      { ingId: "magermilchpulver", qty: 15  },
+      { ingId: "saccharose",       qty: 70  },
+      { ingId: "dextrose",         qty: 25  },
+      { ingId: "invertzucker",     qty: 20  }
+    ],
+    notes: "Klassisch · Reines Milcheis ohne Aromazusätze — die Qualität der Milch kommt voll zum Tragen.",
+    createdAt: 0, updatedAt: 0
+  },
+  // -------- MILCHEIS — MODERN --------
+  {
+    id: "example_caramel",
+    title: "Caramel Salato",
+    type: "milcheis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-milch",   qty: 24  },
+      { ingId: "vollmilch",    qty: 450 },
+      { ingId: "sahne35",      qty: 150 },
+      { ingId: "saccharose",   qty: 70  },
+      { ingId: "invertzucker", qty: 40  },
+      { ingId: "dextrose",     qty: 20  },
+      { ingId: "eigelb",       qty: 40  },
+      { ingId: "salz",         qty: 2   }
+    ],
+    notes: "Modern · Saccharose trocken karamellisieren, mit Sahne ablöschen, abkühlen lassen, dann restliche Zutaten einarbeiten.",
+    createdAt: 0, updatedAt: 0
+  },
+  // -------- FRUCHTEIS — KLASSISCH --------
+  {
+    id: "example_fragola",
+    title: "Fragola Classica",
+    type: "fruchteis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-frucht",  qty: 24  },
+      { ingId: "erdbeere",     qty: 500 },
+      { ingId: "saccharose",   qty: 130 },
+      { ingId: "dextrose",     qty: 40  },
+      { ingId: "zitrone-saft", qty: 20  },
+      { ingId: "wasser",       qty: 90  }
+    ],
+    notes: "Klassisch · Frische Erdbeeren pürieren und durch ein feines Sieb streichen. Zitronensaft hebt das Aroma.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_limone",
+    title: "Limone",
+    type: "fruchteis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-frucht",    qty: 24  },
+      { ingId: "zitrone-saft",   qty: 260 },
+      { ingId: "saccharose",     qty: 150 },
+      { ingId: "dextrose",       qty: 40  },
+      { ingId: "glukose-pulver", qty: 10  },
+      { ingId: "wasser",         qty: 300 }
+    ],
+    notes: "Klassisch · Frisch gepressten Zitronensaft verwenden. Etwas Zitronenabrieb für mehr Tiefe.",
+    createdAt: 0, updatedAt: 0
+  },
+  // -------- FRUCHTEIS — MODERN --------
+  {
+    id: "example_mango",
+    title: "Mango",
+    type: "fruchteis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-frucht",    qty: 24  },
+      { ingId: "mango",          qty: 500 },
+      { ingId: "saccharose",     qty: 100 },
+      { ingId: "dextrose",       qty: 15  },
+      { ingId: "glukose-pulver", qty: 20  },
+      { ingId: "zitrone-saft",   qty: 15  },
+      { ingId: "wasser",         qty: 110 }
+    ],
+    notes: "Modern · Reife Alphonso-Mangos oder hochwertiges Tiefkühlpüree. Der natürliche Zuckergehalt ist bereits hoch — vorsichtig dosieren.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_himbeere",
+    title: "Himbeere",
+    type: "fruchteis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-frucht",  qty: 24  },
+      { ingId: "himbeere",     qty: 500 },
+      { ingId: "saccharose",   qty: 140 },
+      { ingId: "dextrose",     qty: 30  },
+      { ingId: "zitrone-saft", qty: 15  },
+      { ingId: "wasser",       qty: 80  }
+    ],
+    notes: "Modern · Durch ein feines Sieb streichen um Kerne zu entfernen. Intensiv-fruchtige Säure bleibt gut erhalten.",
+    createdAt: 0, updatedAt: 0
+  },
+  {
+    id: "example_heidelbeere",
+    title: "Heidelbeere",
+    type: "fruchteis",
+    machineCap: 800,
+    rows: [
+      { ingId: "base-frucht",  qty: 24  },
+      { ingId: "heidelbeere",  qty: 480 },
+      { ingId: "saccharose",   qty: 110 },
+      { ingId: "dextrose",     qty: 30  },
+      { ingId: "zitrone-saft", qty: 10  },
+      { ingId: "wasser",       qty: 130 }
+    ],
+    notes: "Modern · Wildheidelbeeren oder Tiefkühlware verwenden. Ein Zweig Rosmarin beim Erhitzen verleiht eine subtile Note.",
+    createdAt: 0, updatedAt: 0
+  }
+];
+
 const BASE_RECIPES = {
   milcheis: {
     label: "Milchbase 30 (nach U. Koch)",

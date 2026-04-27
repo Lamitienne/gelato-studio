@@ -67,8 +67,10 @@ function loadStorage() {
     state.ingredients = ing || JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS));
   } catch { state.ingredients = JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)); }
 
-  try { state.recipes = JSON.parse(storage.get(STORAGE_KEYS.recipes) || "[]") || []; }
-  catch { state.recipes = []; }
+  try {
+    const stored = JSON.parse(storage.get(STORAGE_KEYS.recipes) || "null");
+    state.recipes = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RECIPES));
+  } catch { state.recipes = JSON.parse(JSON.stringify(DEFAULT_RECIPES)); }
 
   try { state.ui = Object.assign(state.ui, JSON.parse(storage.get(STORAGE_KEYS.ui) || "{}")); }
   catch {}
@@ -391,9 +393,12 @@ function renderIngredientRows() {
       cells[1].textContent = total2 > 0 ? fmt((Number(e.target.value) || 0) / total2 * 100, 1) + " %" : "—";
       cells[2].textContent = fmt((Number(e.target.value) || 0) * scale2, 1) + " g";
       // Update other rows' percentages and scaled values
-      $$("#ing-tbody tr").forEach((row, i) => {
+      $$("#ing-tbody tr").forEach((row) => {
         if (row === tr) return;
-        const r = state.current.rows[i];
+        const inp2 = row.querySelector(".ing-qty");
+        if (!inp2) return;
+        const origIdx = +inp2.dataset.idx;
+        const r = state.current.rows[origIdx];
         if (!r) return;
         const c = row.querySelectorAll("td.num");
         c[1].textContent = total2 > 0 ? fmt((Number(r.qty) || 0) / total2 * 100, 1) + " %" : "—";
@@ -621,7 +626,6 @@ function applyCurrentToUI() {
   $("#recipe-type").value = state.current.type;
   $("#machine-cap").value = String(state.current.machineCap);
   $("#recipe-notes").value = state.current.notes || "";
-  updateBaseButton();
   renderIngredientRows();
 }
 
@@ -647,30 +651,6 @@ function saveCurrentRecipe() {
   showToast("Rezept gespeichert");
 }
 
-/* ============== BASIS EINFÜGEN ============== */
-function insertBase() {
-  const base = BASE_RECIPES[state.current.type];
-  if (!base) return;
-  // Schon vorhanden? Dann nur Hinweis.
-  const existing = state.current.rows.find(r => r.ingId === base.ingId);
-  if (existing) {
-    showToast(base.label.split(" (")[0] + " ist bereits im Rezept");
-    return;
-  }
-  // Standard-Dosierung: 30 g pro kg Mix → anteilig zur Maschinenkapazität
-  const cap = state.current.machineCap || 800;
-  const qty = Math.round((base.dosagePerKg / 1000) * cap * 10) / 10;
-  state.current.rows.push({ ingId: base.ingId, qty });
-  renderIngredientRows();
-  showToast(base.label.split(" (")[0] + ` eingefügt (${qty} g)`);
-}
-
-function updateBaseButton() {
-  const btn = document.getElementById("load-base");
-  if (!btn) return;
-  const base = BASE_RECIPES[state.current.type];
-  btn.textContent = base ? base.label.split(" (")[0] + " einfügen" : "Basis einfügen";
-}
 
 /* ============== ZUTATEN-DATENBANK ============== */
 function renderDatabase() {
@@ -834,7 +814,6 @@ function init() {
   // Recipe controls
   $("#recipe-type").addEventListener("change", e => {
     state.current.type = e.target.value;
-    updateBaseButton();
     updateBilanz();
   });
   $("#machine-cap").addEventListener("change", e => {
@@ -856,8 +835,7 @@ function init() {
     newRecipe();
     showToast("Rezept geleert");
   });
-  $("#load-base").addEventListener("click", insertBase);
-  $("#save-recipe").addEventListener("click", saveCurrentRecipe);
+$("#save-recipe").addEventListener("click", saveCurrentRecipe);
   $("#add-ingredient-row").addEventListener("click", () => $("#ing-search").focus());
   $("#export-recipes").addEventListener("click", exportRecipes);
   $("#import-recipes").addEventListener("click", () => $("#import-file").click());
@@ -920,7 +898,6 @@ function init() {
 
   // Initial render
   applyCurrentToUI();
-  updateBaseButton();
   renderReference();
   // Gespeicherten Form-Filter wiederherstellen
   const savedFilter = state.ui.formFilter || "all";
