@@ -1397,14 +1397,7 @@ function init() {
     state.current.notes = e.target.value;
   });
 
-  $("#reset-recipe").addEventListener("click", async () => {
-    if (state.current.rows.length) {
-      const ok = await askConfirm(
-        "Möchtest du das aktuelle Rezept verwerfen und ein neues beginnen?",
-        { title: "Rezept leeren", confirmText: "Leeren", danger: true },
-      );
-      if (!ok) return;
-    }
+  $("#reset-recipe").addEventListener("click", () => {
     newRecipe();
     showToast("Rezept geleert");
   });
