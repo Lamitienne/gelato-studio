@@ -464,11 +464,23 @@ function updateScaleBanner(total, target, scale) {
 
 function renderIngredientRows() {
   const tbody = $("#ing-tbody");
+  const table = tbody.closest("table");
+  const thead = table.querySelector("thead tr");
+  const tfoot = table.querySelector("tfoot");
+  const cooking = state.ui.cookingMode;
+
+  if (thead) {
+    thead.innerHTML = cooking
+      ? `<th class="col-check"></th><th>Zutat</th><th class="num col-batch">Für Charge (g)</th>`
+      : `<th class="col-check" hidden></th><th class="col-form" title="Form: T = trocken, F = flüssig">F/T</th><th>Zutat</th><th class="num col-orig">Original (g)</th><th class="num col-pct">Anteil</th><th class="num col-batch">Für Charge (g)</th><th class="col-actions"></th>`;
+  }
+  if (tfoot) tfoot.hidden = cooking;
+
   tbody.innerHTML = "";
   if (!state.current.rows.length) {
     const tr = document.createElement("tr");
     tr.className = "empty-row";
-    tr.innerHTML = `<td colspan="6">Keine Zutaten — über „+ Zeile" oder „Basis einfügen" hinzufügen.</td>`;
+    tr.innerHTML = `<td colspan="${cooking ? 3 : 6}">Keine Zutaten — über „+ Zeile" oder „Basis einfügen" hinzufügen.</td>`;
     tbody.appendChild(tr);
     $("#sum-mass").textContent = "0 g";
     $("#sum-scaled").textContent = "0 g";
@@ -485,7 +497,6 @@ function renderIngredientRows() {
   const target = state.current.machineCap;
   const scale = total > 0 ? target / total : 1;
   const filter = state.ui.formFilter || "all";
-  const cooking = state.ui.cookingMode;
 
   // Anzeigereihenfolge: T zuerst, dann F — Originalindizes für remove/qty bleiben korrekt
   const displayOrder = state.current.rows
@@ -506,25 +517,30 @@ function renderIngredientRows() {
     const qtyValue = Number(row.qty) || 0;
     const pct = total > 0 ? (qtyValue / total) * 100 : 0;
     const scaled = qtyValue * scale;
-    tr.innerHTML = `
-      <td class="col-check" ${cooking ? "" : "hidden"}>
+    tr.innerHTML = cooking ? `
+      <td class="col-check">
         <input type="checkbox" class="cooking-check" />
       </td>
-      <td class="col-form" ${cooking ? "hidden" : ""}>
+      <td>
+        <span class="ing-name">${ing ? escapeHtml(ing.name) : "?"}</span>
+      </td>
+      <td class="num col-batch scaled-cell">${fmt(scaled, 1)} g</td>
+    ` : `
+      <td class="col-form">
         <span class="form-tag form-tag-${form}" data-toggle-form="${idx}" role="button" tabindex="0" title="Klicken zum Wechseln · Doppelklick zum Zurücksetzen">${form}</span>
       </td>
       <td>
         <div class="ing-name-cell">
           <span class="ing-name">${ing ? escapeHtml(ing.name) : '<span class="error-text">Unbekannte Zutat</span>'}</span>
-          ${ing && !cooking ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
+          ${ing ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
         </div>
       </td>
-      <td class="num col-orig" ${cooking ? "hidden" : ""}>
+      <td class="num col-orig">
         <input type="number" class="ing-qty" value="${row.qty}" step="0.1" min="0" data-idx="${idx}" />
       </td>
-      <td class="num col-pct" ${cooking ? "hidden" : ""}>${fmt(pct, 1)} %</td>
+      <td class="num col-pct">${fmt(pct, 1)} %</td>
       <td class="num col-batch scaled-cell">${fmt(scaled, 1)} g</td>
-      <td class="col-actions" ${cooking ? "hidden" : ""}>
+      <td class="col-actions">
         <button class="row-action" data-remove="${idx}" aria-label="Zeile entfernen">×</button>
       </td>
     `;
