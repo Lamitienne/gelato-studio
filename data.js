@@ -436,11 +436,11 @@ const DEFAULT_INGREDIENTS = [
     name: "Milchbase 30 (vorgemischt)",
     cat: "Bindemittel",
     ts: 98.3,
-    fett: 0.2,
-    zucker: 81.8,
-    pac: 99.5,
-    pod: 37.4,
-    stab: 10,
+    fett: 0.3,
+    zucker: 80.3,
+    pac: 91.5,
+    pod: 32.7,
+    stab: 4,
     isBase: true,
     baseFor: "milcheis",
   },
@@ -448,12 +448,12 @@ const DEFAULT_INGREDIENTS = [
     id: "base-frucht",
     name: "Fruchtbase 30 (vorgemischt)",
     cat: "Bindemittel",
-    ts: 98.9,
+    ts: 99.6,
     fett: 0.0,
-    zucker: 89.3,
-    pac: 117.9,
-    pod: 46.1,
-    stab: 10,
+    zucker: 96.0,
+    pac: 112.8,
+    pod: 45.1,
+    stab: 4,
     isBase: true,
     baseFor: "fruchteis",
   },
@@ -503,7 +503,7 @@ const TARGETS = {
    ----
    Milchbase 30 und Fruchtbase 30 — die Zahl steht für die
    Menge in Gramm, die pro 1 kg Mix verwendet wird.
-   210 g Basis liefern Bindemittel, Dextrose, Glukose und
+   100 g Basis liefern Bindemittel, Dextrose, Glukose und
    (bei Milchbase) Magermilchpulver für Bindung und Trockenmasse.
    Ergänzt wird mit Milch/Sahne (Milcheis) bzw. Fruchtpüree und
    Saccharose (Fruchteis), je nach gewünschter Sorte.
@@ -734,11 +734,11 @@ const BASE_RECIPES = {
     ingId: "base-milch",
     dosagePerKg: 30, // g Base pro 1 kg Mix
     components: [
-      { ingId: "johannisbrotkernmehl", qty: 10.5 },
-      { ingId: "guarkernmehl", qty: 10.5 },
-      { ingId: "dextrose", qty: 84 },
-      { ingId: "glukose-pulver", qty: 70 },
-      { ingId: "magermilchpulver", qty: 35 },
+      { ingId: "johannisbrotkernmehl", qty: 2 },
+      { ingId: "guarkernmehl", qty: 2 },
+      { ingId: "dextrose", qty: 32 },
+      { ingId: "glukose-pulver", qty: 32 },
+      { ingId: "magermilchpulver", qty: 32 },
     ],
   },
   fruchteis: {
@@ -746,10 +746,10 @@ const BASE_RECIPES = {
     ingId: "base-frucht",
     dosagePerKg: 30,
     components: [
-      { ingId: "johannisbrotkernmehl", qty: 10.5 },
-      { ingId: "guarkernmehl", qty: 10.5 },
-      { ingId: "dextrose", qty: 105 },
-      { ingId: "glukose-pulver", qty: 70 },
+      { ingId: "johannisbrotkernmehl", qty: 2 },
+      { ingId: "guarkernmehl", qty: 2 },
+      { ingId: "dextrose", qty: 48 },
+      { ingId: "glukose-pulver", qty: 48 },
     ],
   },
 };
