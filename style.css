@@ -229,6 +229,18 @@ a {
     display: flex;
     gap: var(--space-1);
     justify-content: center;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 480px) {
+    .topnav {
+        justify-content: flex-start;
+        padding-bottom: 4px;
+    }
+    .tab {
+        padding: var(--space-2) var(--space-3);
+        flex-shrink: 0;
+    }
 }
 .tab {
     padding: var(--space-2) var(--space-4);
@@ -487,7 +499,21 @@ textarea:focus {
 .db-table {
     width: 100%;
     font-size: var(--text-sm);
-    min-width: 480px;
+    min-width: 440px;
+}
+
+@media (max-width: 480px) {
+    .ingredients-table,
+    .db-table {
+        min-width: 380px;
+        font-size: var(--text-xs);
+    }
+    .ingredients-table th,
+    .ingredients-table td,
+    .db-table th,
+    .db-table td {
+        padding: var(--space-2) var(--space-2);
+    }
 }
 .ingredients-table th,
 .ingredients-table td,
@@ -1141,7 +1167,8 @@ textarea:focus {
     .topbar {
         grid-template-columns: 1fr auto;
         gap: var(--space-3);
-        padding: var(--space-3) var(--space-4);
+        padding: calc(var(--space-3) + var(--safe-area-inset-top))
+            var(--space-4) var(--space-3);
     }
     .topnav {
         grid-column: 1 / -1;
@@ -1154,11 +1181,21 @@ textarea:focus {
     .panel-head h1 {
         font-size: var(--text-lg);
     }
-    .metrics-grid {
-        grid-template-columns: 1fr 1fr;
+@media (max-width: 480px) {
+    .panel-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-4);
     }
-    .card-tools input[type="search"] {
-        width: 140px;
+    .panel-head .actions {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        margin: 0 calc(-1 * var(--space-4));
+        padding: 0 var(--space-4);
+    }
+    .metrics-grid {
+        grid-template-columns: 1fr;
     }
 }
 
