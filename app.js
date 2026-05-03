@@ -18,6 +18,9 @@
     .form-tag-F { background: rgba(74,144,184,.22) !important; color: #2d6985 !important; border: 1px solid rgba(74,144,184,.45) !important; }
     .form-tag-T:hover { background: rgba(199,154,58,.38) !important; }
     .form-tag-F:hover { background: rgba(74,144,184,.38) !important; }
+    .row-filtered { display: none !important; }
+    .form-filter-btn { cursor: pointer !important; }
+    .form-filter-btn.is-active { background: #fff !important; opacity: 1 !important; box-shadow: 0 1px 3px rgba(0,0,0,.08) !important; }
   `;
   document.head.appendChild(s);
 }());
@@ -1431,21 +1434,21 @@ function init() {
     importRecipes(e.target.files[0]);
     e.target.value = "";
   });
-  // Form-Filter (Trocken / Flüssig / Alle)
-  $$(".form-filter-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const f = btn.dataset.formFilter;
-      state.ui.formFilter = f;
-      saveUI();
-      $$(".form-filter-btn").forEach((b) =>
-        b.classList.toggle("is-active", b === btn),
-      );
-      // Zeilen ein-/ausblenden ohne komplettes Re-Render (Fokus bleibt erhalten)
-      $$("#ing-tbody tr").forEach((tr) => {
-        const rowForm = tr.dataset.form;
-        if (!rowForm) return;
-        tr.classList.toggle("row-filtered", f !== "all" && rowForm !== f);
-      });
+  // Form-Filter (Trocken / Flüssig / Alle) — event delegation für Comet-Kompatibilität
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".form-filter-btn");
+    if (!btn) return;
+    const f = btn.dataset.formFilter;
+    if (!f) return;
+    state.ui.formFilter = f;
+    saveUI();
+    $$(".form-filter-btn").forEach((b) =>
+      b.classList.toggle("is-active", b.dataset.formFilter === f),
+    );
+    $$("#ing-tbody tr").forEach((tr) => {
+      const rowForm = tr.dataset.form;
+      if (!rowForm) return;
+      tr.classList.toggle("row-filtered", f !== "all" && rowForm !== f);
     });
   });
 
