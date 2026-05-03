@@ -1189,6 +1189,13 @@ function renderReference() {
   });
 }
 
+function updateThemeColorMeta(d) {
+  const meta = $('meta[name="theme-color"]');
+  if (meta) {
+    meta.setAttribute("content", d === "dark" ? "#181612" : "#faf7f1");
+  }
+}
+
 /* ============== THEME ============== */
 function initTheme() {
   const t = $(".theme-toggle");
@@ -1197,12 +1204,14 @@ function initTheme() {
     (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
   document.documentElement.setAttribute("data-theme", d);
   setToggleIcon(d);
+  updateThemeColorMeta(d);
   t.addEventListener("click", () => {
     d = d === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", d);
     state.ui.theme = d;
     saveUI();
     setToggleIcon(d);
+    updateThemeColorMeta(d);
   });
 }
 function setToggleIcon(d) {
