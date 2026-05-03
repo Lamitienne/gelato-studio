@@ -510,21 +510,21 @@ function renderIngredientRows() {
       <td class="col-check" ${cooking ? "" : "hidden"}>
         <input type="checkbox" class="cooking-check" />
       </td>
-      <td class="col-form">
+      <td class="col-form" ${cooking ? "hidden" : ""}>
         <span class="form-tag form-tag-${form}" data-toggle-form="${idx}" role="button" tabindex="0" title="Klicken zum Wechseln · Doppelklick zum Zurücksetzen">${form}</span>
       </td>
       <td>
         <div class="ing-name-cell">
           <span class="ing-name">${ing ? escapeHtml(ing.name) : '<span class="error-text">Unbekannte Zutat</span>'}</span>
-          ${ing ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
+          ${ing && !cooking ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
         </div>
       </td>
-      <td class="num col-orig">
+      <td class="num col-orig" ${cooking ? "hidden" : ""}>
         <input type="number" class="ing-qty" value="${row.qty}" step="0.1" min="0" data-idx="${idx}" />
       </td>
-      <td class="num col-pct">${fmt(pct, 1)} %</td>
+      <td class="num col-pct" ${cooking ? "hidden" : ""}>${fmt(pct, 1)} %</td>
       <td class="num col-batch scaled-cell">${fmt(scaled, 1)} g</td>
-      <td class="col-actions">
+      <td class="col-actions" ${cooking ? "hidden" : ""}>
         <button class="row-action" data-remove="${idx}" aria-label="Zeile entfernen">×</button>
       </td>
     `;
