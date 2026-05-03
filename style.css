@@ -1430,3 +1430,59 @@ textarea:focus {
     color: var(--color-error);
     font-weight: 600;
 }
+
+/* ============== KOCHMODUS ============== */
+.cooking-active .col-orig,
+.cooking-active .col-pct,
+.cooking-active .col-actions,
+.cooking-active .card-tools,
+.cooking-active #recipe-notes,
+.cooking-active .scale-banner {
+    display: none !important;
+}
+
+.cooking-active .col-check {
+    display: table-cell !important;
+    width: 40px;
+    text-align: center;
+}
+
+.cooking-active .col-batch {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    font-weight: 700;
+    padding: var(--space-3) var(--space-4);
+}
+
+.cooking-active .ing-name {
+    font-size: 1.25rem;
+}
+
+.cooking-active tr.is-done {
+    opacity: 0.4;
+    text-decoration: line-through;
+    background: var(--color-surface-offset) !important;
+}
+
+.cooking-active .ingredients-table th,
+.cooking-active .ingredients-table td {
+    padding-top: var(--space-4);
+    padding-bottom: var(--space-4);
+}
+.cooking-active .ing-qty-input-static {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.cooking-check {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.btn-cooking-active {
+    background: var(--color-success-bg) !important;
+    color: var(--color-success) !important;
+    border-color: var(--color-success) !important;
+}

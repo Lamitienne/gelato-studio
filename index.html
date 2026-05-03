@@ -123,6 +123,9 @@
                         <button class="btn-ghost" id="copy-recipe" hidden>
                             Duplizieren
                         </button>
+                        <button class="btn-ghost" id="toggle-cooking" hidden>
+                            Kochmodus
+                        </button>
                         <button class="btn-primary" id="save-recipe">
                             Speichern
                         </button>
@@ -131,7 +134,7 @@
 
                 <div class="layout-2col">
                     <!-- LEFT: Zutaten -->
-                    <div class="card">
+                    <div class="card" id="recipe-card-left">
                         <div class="card-head">
                             <h2>Zutaten</h2>
                             <div class="card-tools">
@@ -254,6 +257,7 @@
                             <table class="ingredients-table">
                                 <thead>
                                     <tr>
+                                        <th class="col-check" hidden></th>
                                         <th
                                             class="col-form"
                                             title="Form: T = trocken, F = flüssig"
@@ -261,10 +265,14 @@
                                             F/T
                                         </th>
                                         <th>Zutat</th>
-                                        <th class="num">Original (g)</th>
-                                        <th class="num">Anteil</th>
-                                        <th class="num">Für Charge (g)</th>
-                                        <th></th>
+                                        <th class="num col-orig">
+                                            Original (g)
+                                        </th>
+                                        <th class="num col-pct">Anteil</th>
+                                        <th class="num col-batch">
+                                            Für Charge (g)
+                                        </th>
+                                        <th class="col-actions"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="ing-tbody">
@@ -272,18 +280,19 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
+                                        <td class="col-check" hidden></td>
                                         <td></td>
                                         <td><strong>Summe</strong></td>
-                                        <td class="num">
+                                        <td class="num col-orig">
                                             <strong id="sum-mass">0 g</strong>
                                         </td>
-                                        <td class="num">
+                                        <td class="num col-pct">
                                             <strong>100 %</strong>
                                         </td>
-                                        <td class="num">
+                                        <td class="num col-batch">
                                             <strong id="sum-scaled">0 g</strong>
                                         </td>
-                                        <td></td>
+                                        <td class="col-actions"></td>
                                     </tr>
                                 </tfoot>
                             </table>

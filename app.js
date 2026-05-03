@@ -68,6 +68,7 @@ const state = {
     tab: "recipe",
     theme: null,
     formFilter: "all", // "all" | "F" | "T"
+    cookingMode: false,
   },
 };
 
@@ -111,6 +112,23 @@ function saveRecipes() {
 }
 function saveUI() {
   storage.set(STORAGE_KEYS.ui, JSON.stringify(state.ui));
+}
+
+function toggleCookingMode() {
+  state.ui.cookingMode = !state.ui.cookingMode;
+  const btn = $("#toggle-cooking");
+  const panel = $('section[data-panel="recipe"]');
+
+  if (state.ui.cookingMode) {
+    btn.textContent = "Editor-Modus";
+    btn.classList.add("btn-cooking-active");
+    panel.classList.add("cooking-active");
+  } else {
+    btn.textContent = "Kochmodus";
+    btn.classList.remove("btn-cooking-active");
+    panel.classList.remove("cooking-active");
+  }
+  renderIngredientRows();
 }
 
 function duplicateRecipe(id) {
@@ -454,6 +472,7 @@ function renderIngredientRows() {
   const target = state.current.machineCap;
   const scale = total > 0 ? target / total : 1;
   const filter = state.ui.formFilter || "all";
+  const cooking = state.ui.cookingMode;
 
   // Anzeigereihenfolge: T zuerst, dann F — Originalindizes für remove/qty bleiben korrekt
   const displayOrder = state.current.rows
@@ -475,6 +494,9 @@ function renderIngredientRows() {
     const pct = total > 0 ? (qtyValue / total) * 100 : 0;
     const scaled = qtyValue * scale;
     tr.innerHTML = `
+      <td class="col-check" ${cooking ? "" : "hidden"}>
+        <input type="checkbox" class="cooking-check" />
+      </td>
       <td class="col-form">
         <span class="form-tag form-tag-${form}" title="${form === "F" ? "Flüssig" : "Trocken"}">${form}</span>
       </td>
@@ -484,17 +506,27 @@ function renderIngredientRows() {
           ${ing ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
         </div>
       </td>
-      <td class="num">
+      <td class="num col-orig">
         <input type="number" class="ing-qty" value="${row.qty}" step="0.1" min="0" data-idx="${idx}" />
       </td>
-      <td class="num">${fmt(pct, 1)} %</td>
-      <td class="num scaled-cell">${fmt(scaled, 1)} g</td>
-      <td>
+      <td class="num col-pct">${fmt(pct, 1)} %</td>
+      <td class="num col-batch scaled-cell">${fmt(scaled, 1)} g</td>
+      <td class="col-actions">
         <button class="row-action" data-remove="${idx}" aria-label="Zeile entfernen">×</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
+
+  // Bind Cooking events
+  if (cooking) {
+    $$(".cooking-check", tbody).forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const tr = e.target.closest("tr");
+        tr.classList.toggle("is-done", e.target.checked);
+      });
+    });
+  }
 
   $("#sum-mass").textContent = fmt(total, 1) + " g";
   $("#sum-scaled").textContent = fmt(target, 0) + " g";
@@ -993,6 +1025,19 @@ function applyCurrentToUI() {
   $("#machine-cap").value = String(state.current.machineCap);
   $("#recipe-notes").value = state.current.notes || "";
   $("#copy-recipe").hidden = !state.current.id;
+  $("#toggle-cooking").hidden = state.current.rows.length === 0;
+
+  // Reset cooking mode UI classes if not active in state
+  if (!state.ui.cookingMode) {
+    $('section[data-panel="recipe"]').classList.remove("cooking-active");
+    $("#toggle-cooking").textContent = "Kochmodus";
+    $("#toggle-cooking").classList.remove("btn-cooking-active");
+  } else {
+    $('section[data-panel="recipe"]').classList.add("cooking-active");
+    $("#toggle-cooking").textContent = "Editor-Modus";
+    $("#toggle-cooking").classList.add("btn-cooking-active");
+  }
+
   renderIngredientRows();
 }
 
@@ -1284,6 +1329,7 @@ function init() {
       if (newId) loadRecipe(newId);
     }
   });
+  $("#toggle-cooking").addEventListener("click", toggleCookingMode);
   $("#add-ingredient-row").addEventListener("click", () =>
     $("#ing-search").focus(),
   );
