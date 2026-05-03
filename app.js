@@ -5,7 +5,7 @@
 const STORAGE_KEYS = {
   ingredients: "gs_ingredients_v1",
   recipes: "gs_recipes_v1",
-  ui: "gs_ui_v1"
+  ui: "gs_ui_v1",
 };
 
 /* Storage Wrapper: nutzt persistenten Browser-Speicher wenn verfügbar,
@@ -24,21 +24,32 @@ const storage = (() => {
       s.removeItem(t);
       store = s;
     }
-  } catch { store = null; }
+  } catch {
+    store = null;
+  }
   return {
     available: !!store,
     get(key) {
-      try { return store ? store.getItem(key) : (mem[key] ?? null); }
-      catch { return mem[key] ?? null; }
+      try {
+        return store ? store.getItem(key) : (mem[key] ?? null);
+      } catch {
+        return mem[key] ?? null;
+      }
     },
     set(key, val) {
-      try { store ? store.setItem(key, val) : (mem[key] = val); }
-      catch { mem[key] = val; }
+      try {
+        store ? store.setItem(key, val) : (mem[key] = val);
+      } catch {
+        mem[key] = val;
+      }
     },
     remove(key) {
-      try { store ? store.removeItem(key) : (delete mem[key]); }
-      catch { delete mem[key]; }
-    }
+      try {
+        store ? store.removeItem(key) : delete mem[key];
+      } catch {
+        delete mem[key];
+      }
+    },
   };
 })();
 
@@ -50,30 +61,46 @@ const state = {
     title: "Neues Rezept",
     type: "milcheis",
     machineCap: 800,
-    rows: [],   // {ingId, qty}
-    notes: ""
+    rows: [], // {ingId, qty}
+    notes: "",
   },
   ui: {
     tab: "recipe",
     theme: null,
-    formFilter: "all"   // "all" | "F" | "T"
-  }
+    formFilter: "all", // "all" | "F" | "T"
+  },
 };
 
 /* ============== STORAGE ============== */
 function loadStorage() {
   try {
-    const ing = JSON.parse(storage.get(STORAGE_KEYS.ingredients) || "null");
-    state.ingredients = ing || JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS));
-  } catch { state.ingredients = JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS)); }
+    const ingData = storage.get(STORAGE_KEYS.ingredients);
+    const parsedIng = ingData ? JSON.parse(ingData) : null;
+    state.ingredients =
+      Array.isArray(parsedIng) && parsedIng.length
+        ? parsedIng
+        : JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS));
+  } catch {
+    state.ingredients = JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS));
+  }
 
   try {
-    const stored = JSON.parse(storage.get(STORAGE_KEYS.recipes) || "null");
-    state.recipes = (stored && stored.length) ? stored : JSON.parse(JSON.stringify(DEFAULT_RECIPES));
-  } catch { state.recipes = JSON.parse(JSON.stringify(DEFAULT_RECIPES)); }
+    const recData = storage.get(STORAGE_KEYS.recipes);
+    const parsedRec = recData ? JSON.parse(recData) : null;
+    state.recipes =
+      Array.isArray(parsedRec) && parsedRec.length
+        ? parsedRec
+        : JSON.parse(JSON.stringify(DEFAULT_RECIPES));
+  } catch {
+    state.recipes = JSON.parse(JSON.stringify(DEFAULT_RECIPES));
+  }
 
-  try { state.ui = Object.assign(state.ui, JSON.parse(storage.get(STORAGE_KEYS.ui) || "{}")); }
-  catch {}
+  try {
+    state.ui = Object.assign(
+      state.ui,
+      JSON.parse(storage.get(STORAGE_KEYS.ui) || "{}"),
+    );
+  } catch {}
 }
 
 function saveIngredients() {
@@ -86,12 +113,27 @@ function saveUI() {
   storage.set(STORAGE_KEYS.ui, JSON.stringify(state.ui));
 }
 
+function duplicateRecipe(id) {
+  const r = state.recipes.find((x) => x.id === id);
+  if (!r) return;
+  const copy = JSON.parse(JSON.stringify(r));
+  copy.id = uid();
+  copy.title = copy.title + " (Kopie)";
+  copy.createdAt = Date.now();
+  copy.updatedAt = Date.now();
+  state.recipes.push(copy);
+  saveRecipes();
+  renderLibrary();
+  showToast("Rezept dupliziert");
+  return copy.id;
+}
+
 /* ============== UTIL ============== */
-const $  = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
 function findIngredient(id) {
-  return state.ingredients.find(i => i.id === id);
+  return state.ingredients.find((i) => i.id === id);
 }
 
 /* ============== FORM (Trocken / Flüssig) ==============
@@ -99,16 +141,41 @@ function findIngredient(id) {
    T = trocken (Pulver, Bindemittel, Kristallzucker, Pasten, Bases)
    ====================================================== */
 const LIQUID_IDS = new Set([
-  "vollmilch", "magermilch", "sahne33", "sahne35", "kondensmilch", "joghurt",
-  "glukose40", "honig", "ahornsirup", "invertzucker",
-  "eigelb", "wasser", "zitrone-saft"
+  "vollmilch",
+  "magermilch",
+  "sahne33",
+  "sahne35",
+  "kondensmilch",
+  "joghurt",
+  "glukose40",
+  "honig",
+  "ahornsirup",
+  "invertzucker",
+  "eigelb",
+  "wasser",
+  "zitrone-saft",
 ]);
 const DRY_IDS = new Set([
-  "magermilchpulver", "vollmilchpulver", "butter",
-  "saccharose", "dextrose", "fruktose", "glukose-pulver", "maltodextrin",
-  "johannisbrotkernmehl", "guarkernmehl", "xanthan", "inulin",
-  "kakao", "schoko-70", "haselnuss-pasta", "sahne-eis-basis", "vanille-mark", "salz",
-  "base-milch", "base-frucht"
+  "magermilchpulver",
+  "vollmilchpulver",
+  "butter",
+  "saccharose",
+  "dextrose",
+  "fruktose",
+  "glukose-pulver",
+  "maltodextrin",
+  "johannisbrotkernmehl",
+  "guarkernmehl",
+  "xanthan",
+  "inulin",
+  "kakao",
+  "schoko-70",
+  "haselnuss-pasta",
+  "sahne-eis-basis",
+  "vanille-mark",
+  "salz",
+  "base-milch",
+  "base-frucht",
 ]);
 
 function getForm(ing) {
@@ -121,13 +188,15 @@ function getForm(ing) {
   return (Number(ing.ts) || 0) >= 50 ? "T" : "F";
 }
 
-function fmt(num, decimals=1) {
+function fmt(num, decimals = 1) {
   if (!isFinite(num)) return "—";
   return num.toFixed(decimals).replace(/\.0$/, "").replace(".", ",");
 }
 
 function uid() {
-  return "r_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  return (
+    "r_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+  );
 }
 
 function showToast(msg) {
@@ -135,12 +204,22 @@ function showToast(msg) {
   el.textContent = msg;
   el.hidden = false;
   clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => { el.hidden = true; }, 2200);
+  showToast._t = setTimeout(() => {
+    el.hidden = true;
+  }, 2200);
 }
 
 /* ============== MODAL DIALOGE ============== */
-function askConfirm(message, { title = "Bestätigen", confirmText = "OK", cancelText = "Abbrechen", danger = false } = {}) {
-  return new Promise(resolve => {
+function askConfirm(
+  message,
+  {
+    title = "Bestätigen",
+    confirmText = "OK",
+    cancelText = "Abbrechen",
+    danger = false,
+  } = {},
+) {
+  return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.innerHTML = `
@@ -160,13 +239,13 @@ function askConfirm(message, { title = "Bestätigen", confirmText = "OK", cancel
       document.removeEventListener("keydown", onKey);
       resolve(val);
     };
-    overlay.addEventListener("click", e => {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) close(false);
       const act = e.target.dataset && e.target.dataset.act;
       if (act === "ok") close(true);
       if (act === "cancel") close(false);
     });
-    const onKey = e => {
+    const onKey = (e) => {
       if (e.key === "Escape") close(false);
       if (e.key === "Enter") close(true);
     };
@@ -177,25 +256,30 @@ function askConfirm(message, { title = "Bestätigen", confirmText = "OK", cancel
 
 function askForm(title, fields) {
   // fields: [{name, label, type?, value?, placeholder?, options?}]
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
-    const fieldHtml = fields.map((f, i) => {
-      if (f.type === "select") {
-        const opts = f.options.map(o =>
-          `<option value="${escapeHtml(o)}"${o === f.value ? " selected" : ""}>${escapeHtml(o)}</option>`
-        ).join("");
-        return `<label class="modal-field">
+    const fieldHtml = fields
+      .map((f, i) => {
+        if (f.type === "select") {
+          const opts = f.options
+            .map(
+              (o) =>
+                `<option value="${escapeHtml(o)}"${o === f.value ? " selected" : ""}>${escapeHtml(o)}</option>`,
+            )
+            .join("");
+          return `<label class="modal-field">
           <span>${escapeHtml(f.label)}</span>
           <select name="${escapeHtml(f.name)}">${opts}</select>
         </label>`;
-      }
-      const t = f.type || "text";
-      return `<label class="modal-field">
+        }
+        const t = f.type || "text";
+        return `<label class="modal-field">
         <span>${escapeHtml(f.label)}</span>
         <input name="${escapeHtml(f.name)}" type="${t}" ${t === "number" ? 'step="any" inputmode="decimal"' : ""} value="${escapeHtml(f.value ?? "")}" placeholder="${escapeHtml(f.placeholder ?? "")}" ${i === 0 ? "autofocus" : ""}>
       </label>`;
-    }).join("");
+      })
+      .join("");
     overlay.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-title">${escapeHtml(title)}</div>
@@ -216,20 +300,22 @@ function askForm(title, fields) {
       resolve(val);
     };
     const form = overlay.querySelector(".modal-form");
-    form.addEventListener("submit", e => {
+    form.addEventListener("submit", (e) => {
       e.preventDefault();
       const data = {};
-      fields.forEach(f => {
+      fields.forEach((f) => {
         const el = form.elements[f.name];
         data[f.name] = el ? el.value : "";
       });
       close(data);
     });
-    overlay.addEventListener("click", e => {
+    overlay.addEventListener("click", (e) => {
       if (e.target === overlay) close(null);
       if (e.target.dataset && e.target.dataset.act === "cancel") close(null);
     });
-    const onKey = e => { if (e.key === "Escape") close(null); };
+    const onKey = (e) => {
+      if (e.key === "Escape") close(null);
+    };
     document.addEventListener("keydown", onKey);
     setTimeout(() => {
       const first = form.querySelector("input, select");
@@ -247,30 +333,51 @@ function askForm(title, fields) {
  *   Werte pro 100 g Zutat tabelliert sind.
  */
 function calculate(rows) {
+  // Filtere Zeilen mit ungültigen oder fehlenden Zutaten
+  const validRows = rows
+    .map((r) => ({ ...r, ing: findIngredient(r.ingId) }))
+    .filter((r) => r.ing && (Number(r.qty) || 0) > 0);
+
   const total = rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-  const empty = { total: 0, ts: 0, fett: 0, zucker: 0, wasser: 0, pac: 0, pod: 0 };
+  const validTotal = validRows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+
+  const empty = {
+    total: 0,
+    ts: 0,
+    fett: 0,
+    zucker: 0,
+    wasser: 100,
+    pac: 0,
+    pod: 0,
+    stab: 0,
+    incomplete: false,
+  };
   if (total <= 0) return empty;
 
-  const acc = { ...empty, total };
+  const acc = { ...empty, total, incomplete: validTotal < total };
 
-  for (const r of rows) {
-    const ing = findIngredient(r.ingId);
-    if (!ing) continue;
+  for (const r of validRows) {
     const qty = Number(r.qty) || 0;
-    if (qty <= 0) continue;
     const f = qty / total;
-    acc.ts     += f * ing.ts;
-    acc.fett   += f * ing.fett;
-    acc.zucker += f * ing.zucker;
-    acc.pac    += f * ing.pac;
-    acc.pod    += f * ing.pod;
+    acc.ts += f * r.ing.ts;
+    acc.fett += f * r.ing.fett;
+    acc.zucker += f * r.ing.zucker;
+    acc.pac += f * r.ing.pac;
+    acc.pod += f * r.ing.pod;
+    acc.stab += f * (r.ing.stab || 0);
   }
   acc.wasser = 100 - acc.ts;
   return acc;
 }
 
-function evaluateMetric(value, target) {
+function evaluateMetric(value, target, key) {
   if (!target) return "neutral";
+  // Spezialfall Stabilisator: Nur Untergrenze kritisch, Obergrenze oft weich
+  if (key === "stab") {
+    if (value < 0.1) return "bad";
+    if (value < 0.3 || value > 0.6) return "warn";
+    return "ok";
+  }
   if (value < target.min || value > target.max) return "bad";
   if (value < target.ideal[0] || value > target.ideal[1]) return "warn";
   return "ok";
@@ -280,8 +387,10 @@ function evaluateMetric(value, target) {
 function setTab(name) {
   state.ui.tab = name;
   saveUI();
-  $$(".tab").forEach(t => t.setAttribute("aria-current", t.dataset.tab === name ? "true" : "false"));
-  $$(".panel").forEach(p => p.hidden = p.dataset.panel !== name);
+  $$(".tab").forEach((t) =>
+    t.setAttribute("aria-current", t.dataset.tab === name ? "true" : "false"),
+  );
+  $$(".panel").forEach((p) => (p.hidden = p.dataset.panel !== name));
   if (name === "library") renderLibrary();
   if (name === "ingredients") renderDatabase();
   if (name === "reference") renderReference();
@@ -289,14 +398,16 @@ function setTab(name) {
 
 /* ============== RENDER: ZUTATEN ZEILEN ============== */
 function updateFormSummary(total, scale) {
-  let dryOrig = 0, liqOrig = 0;
-  state.current.rows.forEach(r => {
+  let dryOrig = 0,
+    liqOrig = 0;
+  state.current.rows.forEach((r) => {
     const ing = findIngredient(r.ingId);
     const q = Number(r.qty) || 0;
-    if (getForm(ing) === "T") dryOrig += q; else liqOrig += q;
+    if (getForm(ing) === "T") dryOrig += q;
+    else liqOrig += q;
   });
-  $("#sum-dry-orig").textContent  = `(${fmt(dryOrig, 1)} g orig.)`;
-  $("#sum-liq-orig").textContent  = `(${fmt(liqOrig, 1)} g orig.)`;
+  $("#sum-dry-orig").textContent = `(${fmt(dryOrig, 1)} g orig.)`;
+  $("#sum-liq-orig").textContent = `(${fmt(liqOrig, 1)} g orig.)`;
   $("#sum-dry-scaled").textContent = fmt(dryOrig * scale, 1) + " g";
   $("#sum-liq-scaled").textContent = fmt(liqOrig * scale, 1) + " g";
 }
@@ -304,13 +415,19 @@ function updateFormSummary(total, scale) {
 function updateScaleBanner(total, target, scale) {
   const banner = $("#scale-banner");
   if (!banner) return;
-  if (!total || total <= 0) { banner.hidden = true; return; }
+  if (!total || total <= 0) {
+    banner.hidden = true;
+    return;
+  }
   banner.hidden = false;
   $("#scale-original").textContent = fmt(total, 1) + " g";
   $("#scale-target").textContent = fmt(target, 0) + " g";
-  const factorText = scale >= 1
-    ? "Faktor " + fmt(scale, 3) + "× (größer)"
-    : "Faktor " + fmt(scale, 3) + "× (kleiner)";
+  const factorText =
+    scale > 1
+      ? "Faktor " + fmt(scale, 3) + "× (größer)"
+      : scale < 1
+        ? "Faktor " + fmt(scale, 3) + "× (kleiner)"
+        : "Faktor 1,000×";
   $("#scale-factor").textContent = factorText;
 }
 
@@ -330,9 +447,12 @@ function renderIngredientRows() {
     return;
   }
 
-  const total = state.current.rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+  const total = state.current.rows.reduce(
+    (s, r) => s + (Number(r.qty) || 0),
+    0,
+  );
   const target = state.current.machineCap;
-  const scale = total > 0 ? (target / total) : 1;
+  const scale = total > 0 ? target / total : 1;
   const filter = state.ui.formFilter || "all";
 
   // Anzeigereihenfolge: T zuerst, dann F — Originalindizes für remove/qty bleiben korrekt
@@ -351,15 +471,16 @@ function renderIngredientRows() {
     const tr = document.createElement("tr");
     tr.dataset.form = form;
     if (filter !== "all" && filter !== form) tr.classList.add("row-filtered");
-    const pct = total > 0 ? ((Number(row.qty) || 0) / total * 100) : 0;
-    const scaled = (Number(row.qty) || 0) * scale;
+    const qtyValue = Number(row.qty) || 0;
+    const pct = total > 0 ? (qtyValue / total) * 100 : 0;
+    const scaled = qtyValue * scale;
     tr.innerHTML = `
       <td class="col-form">
-        <span class="form-tag form-tag-${form}" title="${form === 'F' ? 'Flüssig' : 'Trocken'}">${form}</span>
+        <span class="form-tag form-tag-${form}" title="${form === "F" ? "Flüssig" : "Trocken"}">${form}</span>
       </td>
       <td>
         <div class="ing-name-cell">
-          <span class="ing-name">${ing ? escapeHtml(ing.name) : "?"}</span>
+          <span class="ing-name">${ing ? escapeHtml(ing.name) : '<span class="error-text">Unbekannte Zutat</span>'}</span>
           ${ing ? `<span class="ing-cat">${escapeHtml(ing.cat)}</span>` : ""}
         </div>
       </td>
@@ -381,29 +502,31 @@ function renderIngredientRows() {
   updateFormSummary(total, scale);
 
   // Bind events
-  $$(".ing-qty").forEach(inp => {
-    inp.addEventListener("input", e => {
+  $$(".ing-qty").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
       const idx = +e.target.dataset.idx;
-      state.current.rows[idx].qty = parseFloat(e.target.value) || 0;
-      // Update only numerics, no full re-render to keep focus
-      const total2 = state.current.rows.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-      const scale2 = total2 > 0 ? (state.current.machineCap / total2) : 1;
-      const tr = e.target.closest("tr");
-      const cells = tr.querySelectorAll("td.num");
-      cells[1].textContent = total2 > 0 ? fmt((Number(e.target.value) || 0) / total2 * 100, 1) + " %" : "—";
-      cells[2].textContent = fmt((Number(e.target.value) || 0) * scale2, 1) + " g";
-      // Update other rows' percentages and scaled values
+      const val = parseFloat(e.target.value.replace(",", "."));
+      state.current.rows[idx].qty = isNaN(val) ? 0 : val;
+
+      const total2 = state.current.rows.reduce(
+        (s, r) => s + (Number(r.qty) || 0),
+        0,
+      );
+      const scale2 = total2 > 0 ? state.current.machineCap / total2 : 1;
+
+      // Update ALL rows to keep percentages consistent
       $$("#ing-tbody tr").forEach((row) => {
-        if (row === tr) return;
-        const inp2 = row.querySelector(".ing-qty");
-        if (!inp2) return;
-        const origIdx = +inp2.dataset.idx;
+        const rowInp = row.querySelector(".ing-qty");
+        if (!rowInp) return;
+        const origIdx = +rowInp.dataset.idx;
         const r = state.current.rows[origIdx];
-        if (!r) return;
+        const rowQty = Number(r.qty) || 0;
         const c = row.querySelectorAll("td.num");
-        c[1].textContent = total2 > 0 ? fmt((Number(r.qty) || 0) / total2 * 100, 1) + " %" : "—";
-        c[2].textContent = fmt((Number(r.qty) || 0) * scale2, 1) + " g";
+        c[1].textContent =
+          total2 > 0 ? fmt((rowQty / total2) * 100, 1) + " %" : "0 %";
+        c[2].textContent = fmt(rowQty * scale2, 1) + " g";
       });
+
       $("#sum-mass").textContent = fmt(total2, 1) + " g";
       updateScaleBanner(total2, state.current.machineCap, scale2);
       updateFormSummary(total2, scale2);
@@ -411,8 +534,8 @@ function renderIngredientRows() {
     });
   });
 
-  $$("[data-remove]").forEach(btn => {
-    btn.addEventListener("click", e => {
+  $$("[data-remove]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
       const idx = +e.currentTarget.dataset.remove;
       state.current.rows.splice(idx, 1);
       renderIngredientRows();
@@ -425,27 +548,42 @@ function renderIngredientRows() {
 /* ============== RENDER: BILANZ ============== */
 function updateBilanz() {
   const r = calculate(state.current.rows);
-  const targets = TARGETS[state.current.type].metrics;
-  $("#target-label").textContent = "Zielbereich: " + TARGETS[state.current.type].label;
+  const targets = { ...TARGETS[state.current.type].metrics };
+  // Add Stabilizer target dynamically
+  targets.stab = {
+    label: "Stabilisator",
+    unit: "%",
+    min: 0.3,
+    max: 0.6,
+    ideal: [0.35, 0.5],
+  };
 
-  const order = ["ts", "fett", "zucker", "pac", "pod"];
+  $("#target-label").textContent =
+    "Zielbereich: " + TARGETS[state.current.type].label;
+
+  const order = ["ts", "fett", "zucker", "pac", "pod", "stab"];
   const grid = $("#metrics-grid");
   grid.innerHTML = "";
 
-  let bad = 0, warn = 0, ok = 0;
+  let bad = 0,
+    warn = 0,
+    ok = 0;
 
-  order.forEach(key => {
+  order.forEach((key) => {
     const target = targets[key];
     const val = r[key];
-    const status = state.current.rows.length === 0 ? "neutral" : evaluateMetric(val, target);
+    const status =
+      state.current.rows.length === 0 || r.total <= 0
+        ? "neutral"
+        : evaluateMetric(val, target, key);
     if (status === "bad") bad++;
     else if (status === "warn") warn++;
     else if (status === "ok") ok++;
 
     // Bar visualization
     const range = target.max - target.min;
-    const padding = range * 0.4;  // visualization padding around range
-    const barMin = target.min - padding;
+    const padding = range * 0.4;
+    const barMin = Math.max(0, target.min - padding);
     const barMax = target.max + padding;
     const barRange = barMax - barMin;
     const idealLeft = ((target.ideal[0] - barMin) / barRange) * 100;
@@ -457,14 +595,14 @@ function updateBilanz() {
     card.className = "metric " + (status === "neutral" ? "" : status);
     card.innerHTML = `
       <div class="metric-label">
-        <span class="dot ${status === 'neutral' ? '' : status}"></span>
+        <span class="dot ${status === "neutral" ? "" : status}"></span>
         ${target.label}
       </div>
-      <div class="metric-value">${state.current.rows.length === 0 ? "—" : fmt(val, 1) + (target.unit ? " " + target.unit : "")}</div>
-      <div class="metric-target">Ideal ${fmt(target.ideal[0])}–${fmt(target.ideal[1])}${target.unit ? " " + target.unit : ""}</div>
+      <div class="metric-value">${state.current.rows.length === 0 || r.total <= 0 ? "—" : fmt(val, key === "stab" ? 2 : 1) + (target.unit ? " " + target.unit : "")}</div>
+      <div class="metric-target">Ideal ${fmt(target.ideal[0], key === "stab" ? 2 : 1)}–${fmt(target.ideal[1], key === "stab" ? 2 : 1)}${target.unit ? " " + target.unit : ""}</div>
       <div class="metric-bar">
         <div class="metric-bar-zone" style="left:${idealLeft}%; width:${idealWidth}%"></div>
-        ${state.current.rows.length === 0 ? "" : `<div class="metric-bar-marker" style="left:${markerPos}%"></div>`}
+        ${state.current.rows.length === 0 || r.total <= 0 ? "" : `<div class="metric-bar-marker" style="left:${markerPos}%"></div>`}
       </div>
     `;
     grid.appendChild(card);
@@ -473,40 +611,75 @@ function updateBilanz() {
   // Overall status
   const pill = $("#overall-status");
   const advice = $("#advice");
-  if (state.current.rows.length === 0) {
+  if (state.current.rows.length === 0 || r.total <= 0) {
     pill.className = "status-pill";
     pill.textContent = "—";
     advice.textContent = "Füge Zutaten hinzu, um die Bilanz zu berechnen.";
-  } else if (bad > 0) {
-    pill.className = "status-pill bad";
-    pill.textContent = "Außerhalb";
-    advice.textContent = generateAdvice(r, targets);
-  } else if (warn > 0) {
-    pill.className = "status-pill warn";
-    pill.textContent = "Im Toleranzbereich";
-    advice.textContent = generateAdvice(r, targets);
   } else {
-    pill.className = "status-pill ok";
-    pill.textContent = "Ausgewogen";
-    advice.textContent = "Alle Werte liegen im idealen Bereich. Schöne Bilanz.";
+    if (r.incomplete) {
+      pill.className = "status-pill bad";
+      pill.textContent = "Unvollständig";
+      advice.innerHTML =
+        '<span class="error-text">Achtung: Einige Zutaten sind nicht in der Datenbank vorhanden. Die Bilanz ist ungenau.</span>';
+    } else if (bad > 0) {
+      pill.className = "status-pill bad";
+      pill.textContent = "Außerhalb";
+      advice.textContent = generateAdvice(r, targets);
+    } else if (warn > 0) {
+      pill.className = "status-pill warn";
+      pill.textContent = "Im Toleranzbereich";
+      advice.textContent = generateAdvice(r, targets);
+    } else {
+      pill.className = "status-pill ok";
+      pill.textContent = "Ausgewogen";
+      advice.textContent =
+        "Alle Werte liegen im idealen Bereich. Schöne Bilanz.";
+    }
   }
 }
 
 function generateAdvice(r, targets) {
   const tips = [];
   const checks = [
-    ["ts",     "Trockenmasse",  "mehr Magermilchpulver oder Dextrose",        "weniger Milchpulver oder mehr Wasser/Frucht"],
-    ["fett",   "Fett",          "etwas Sahne ergänzen",                        "Sahne durch Milch ersetzen"],
-    ["zucker", "Zucker",        "Saccharose oder Dextrose erhöhen",            "Zuckermenge reduzieren oder durch Maltodextrin ersetzen"],
-    ["pac",    "PAC",           "Anteil Dextrose oder Invertzucker erhöhen",    "Saccharose / Glukose-Pulver einsetzen statt Dextrose"],
-    ["pod",    "POD",           "Saccharose oder Fruktose hinzufügen",         "Dextrose oder Maltodextrin statt Saccharose"]
+    [
+      "ts",
+      "Trockenmasse",
+      "mehr Magermilchpulver oder Dextrose",
+      "weniger Milchpulver oder mehr Wasser/Frucht",
+    ],
+    ["fett", "Fett", "etwas Sahne ergänzen", "Sahne durch Milch ersetzen"],
+    [
+      "zucker",
+      "Zucker",
+      "Saccharose oder Dextrose erhöhen",
+      "Zuckermenge reduzieren oder durch Maltodextrin ersetzen",
+    ],
+    [
+      "pac",
+      "PAC",
+      "Anteil Dextrose oder Invertzucker erhöhen",
+      "Saccharose / Glukose-Pulver einsetzen statt Dextrose",
+    ],
+    [
+      "pod",
+      "POD",
+      "Saccharose oder Fruktose hinzufügen",
+      "Dextrose oder Maltodextrin statt Saccharose",
+    ],
+    [
+      "stab",
+      "Stabilisator",
+      "Anteil Bindemittel (Johannisbrotkernmehl etc.) erhöhen",
+      "Bindemittel reduzieren",
+    ],
   ];
   for (const [k, label, lowTip, highTip] of checks) {
     const t = targets[k];
     if (r[k] < t.min) tips.push(`${label} zu niedrig — ${lowTip}.`);
     else if (r[k] > t.max) tips.push(`${label} zu hoch — ${highTip}.`);
   }
-  if (!tips.length) return "Werte liegen im Toleranzbereich, einzelne Werte am Rand.";
+  if (!tips.length)
+    return "Werte liegen im Toleranzbereich, einzelne Werte am Rand.";
   return tips.join(" ");
 }
 
@@ -521,18 +694,27 @@ function renderAutocomplete(query) {
   }
   const q = query.toLowerCase();
   const matches = state.ingredients
-    .filter(i => i.name.toLowerCase().includes(q) || i.cat.toLowerCase().includes(q))
+    .filter(
+      (i) =>
+        i.name.toLowerCase().includes(q) || i.cat.toLowerCase().includes(q),
+    )
     .slice(0, 8);
-  if (!matches.length) { ac.hidden = true; return; }
-  ac.innerHTML = matches.map((m, i) =>
-    `<div class="autocomplete-item${i === acIndex ? ' active' : ''}" data-id="${m.id}">
+  if (!matches.length) {
+    ac.hidden = true;
+    return;
+  }
+  ac.innerHTML = matches
+    .map(
+      (m, i) =>
+        `<div class="autocomplete-item${i === acIndex ? " active" : ""}" data-id="${m.id}">
       <span>${escapeHtml(m.name)}</span>
       <span class="ac-cat">${escapeHtml(m.cat)}</span>
-    </div>`
-  ).join("");
+    </div>`,
+    )
+    .join("");
   ac.hidden = false;
-  ac.querySelectorAll(".autocomplete-item").forEach(el => {
-    el.addEventListener("mousedown", e => {
+  ac.querySelectorAll(".autocomplete-item").forEach((el) => {
+    el.addEventListener("mousedown", (e) => {
       e.preventDefault();
       selectIngredient(el.dataset.id);
     });
@@ -570,10 +752,12 @@ function resetIngSearch() {
 /* ============== RENDER: REZEPTBUCH ============== */
 function getOverallStatus(calc, type) {
   if (!calc || calc.total <= 0) return "";
-  const targets = TARGETS[type].metrics;
-  let bad = 0, warn = 0;
-  for (const key of ["ts", "fett", "zucker", "pac", "pod"]) {
-    const s = evaluateMetric(calc[key], targets[key]);
+  const targets = { ...TARGETS[type].metrics };
+  targets.stab = { min: 0.3, max: 0.6, ideal: [0.35, 0.5] };
+  let bad = 0,
+    warn = 0;
+  for (const key of ["ts", "fett", "zucker", "pac", "pod", "stab"]) {
+    const s = evaluateMetric(calc[key], targets[key], key);
     if (s === "bad") bad++;
     else if (s === "warn") warn++;
   }
@@ -582,7 +766,11 @@ function getOverallStatus(calc, type) {
 
 function fmtDate(ts) {
   if (!ts) return "";
-  return new Date(ts).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(ts).toLocaleDateString("de-CH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 const CARD_PLACEHOLDERS = {
@@ -596,7 +784,7 @@ const CARD_PLACEHOLDERS = {
     <rect x="13" y="10" width="34" height="56" rx="17" fill="#f4914a" stroke="#c0552a" stroke-width="1.5"/>
     <rect x="18" y="15" width="10" height="22" rx="5" fill="white" opacity="0.25"/>
     <rect x="26" y="62" width="8" height="26" rx="4" fill="#d4a44a" stroke="#a07a3d" stroke-width="1"/>
-  </svg>`
+  </svg>`,
 };
 
 function compressImage(file, maxW = 600, maxH = 400, quality = 0.78) {
@@ -612,7 +800,10 @@ function compressImage(file, maxW = 600, maxH = 400, quality = 0.78) {
       canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL("image/jpeg", quality));
     };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error()); };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error());
+    };
     img.src = objectUrl;
   });
 }
@@ -622,12 +813,16 @@ function renderLibrary() {
   const searchEl = $("#library-search");
   const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
 
-  const all = [...state.recipes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const all = [...state.recipes].sort(
+    (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
+  );
   const filtered = q
-    ? all.filter(r =>
-        (r.title || "").toLowerCase().includes(q) ||
-        (TARGETS[r.type]?.label || "").toLowerCase().includes(q) ||
-        (r.notes || "").toLowerCase().includes(q))
+    ? all.filter(
+        (r) =>
+          (r.title || "").toLowerCase().includes(q) ||
+          (TARGETS[r.type]?.label || "").toLowerCase().includes(q) ||
+          (r.notes || "").toLowerCase().includes(q),
+      )
     : all;
 
   if (!filtered.length) {
@@ -637,27 +832,35 @@ function renderLibrary() {
     return;
   }
 
-  const STATUS_LABELS = { ok: "Ausgewogen", warn: "Im Toleranzbereich", bad: "Außerhalb" };
+  const STATUS_LABELS = {
+    ok: "Ausgewogen",
+    warn: "Im Toleranzbereich",
+    bad: "Außerhalb",
+  };
 
-  grid.innerHTML = filtered.map(rec => {
-    const calc = calculate(rec.rows);
-    const statusKey = rec.rows.length ? getOverallStatus(calc, rec.type) : "";
-    const statusLabel = STATUS_LABELS[statusKey] || "";
+  grid.innerHTML = filtered
+    .map((rec) => {
+      const calc = calculate(rec.rows);
+      const statusKey = rec.rows.length ? getOverallStatus(calc, rec.type) : "";
+      const statusLabel = STATUS_LABELS[statusKey] || "";
 
-    const topIngs = [...rec.rows]
-      .filter(r => r.qty > 0)
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 3)
-      .map(r => { const ing = findIngredient(r.ingId); return ing ? ing.name : null; })
-      .filter(Boolean);
+      const topIngs = [...rec.rows]
+        .filter((r) => r.qty > 0)
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 3)
+        .map((r) => {
+          const ing = findIngredient(r.ingId);
+          return ing ? ing.name : null;
+        })
+        .filter(Boolean);
 
-    const notesPreview = (rec.notes || "").split("\n")[0].trim().slice(0, 90);
-    const dateStr = fmtDate(rec.updatedAt || rec.createdAt);
-    const imgContent = rec.image
-      ? `<img src="${rec.image}" alt="${escapeHtml(rec.title || "")}" class="recipe-card-photo">`
-      : `<div class="recipe-card-placeholder">${CARD_PLACEHOLDERS[rec.type] || CARD_PLACEHOLDERS.milcheis}</div>`;
+      const notesPreview = (rec.notes || "").split("\n")[0].trim().slice(0, 90);
+      const dateStr = fmtDate(rec.updatedAt || rec.createdAt);
+      const imgContent = rec.image
+        ? `<img src="${rec.image}" alt="${escapeHtml(rec.title || "")}" class="recipe-card-photo">`
+        : `<div class="recipe-card-placeholder">${CARD_PLACEHOLDERS[rec.type] || CARD_PLACEHOLDERS.milcheis}</div>`;
 
-    return `
+      return `
       <article class="recipe-card" data-id="${rec.id}">
         <div class="recipe-card-img ${rec.type}" data-recipe-id="${rec.id}" title="${rec.image ? "Foto ändern" : "Foto hinzufügen"}">
           ${imgContent}
@@ -666,6 +869,7 @@ function renderLibrary() {
           </div>
         </div>
         <div class="recipe-card-inner">
+          <button class="duplicate" data-dup="${rec.id}" title="Duplizieren" aria-label="Duplizieren">❐</button>
           <button class="delete" data-delete="${rec.id}" aria-label="Rezept löschen">×</button>
           <h3>${escapeHtml(rec.title || "Ohne Titel")}</h3>
           <div class="tags">
@@ -673,19 +877,21 @@ function renderLibrary() {
             <span class="tag">${rec.rows.length} Zutaten</span>
             ${statusKey ? `<span class="status-pill ${statusKey}">${statusLabel}</span>` : ""}
           </div>
-          ${topIngs.length ? `<div class="recipe-card-ings">${topIngs.map(n => `<span>${escapeHtml(n)}</span>`).join("")}</div>` : ""}
+          ${topIngs.length ? `<div class="recipe-card-ings">${topIngs.map((n) => `<span>${escapeHtml(n)}</span>`).join("")}</div>` : ""}
           <div class="stats">
             <span>TS <strong>${fmt(calc.ts, 1)}%</strong></span>
             <span>Fett <strong>${fmt(calc.fett, 1)}%</strong></span>
             <span>PAC <strong>${fmt(calc.pac, 0)}</strong></span>
             <span>POD <strong>${fmt(calc.pod, 0)}</strong></span>
+            <span>Stab <strong>${fmt(calc.stab, 2)}%</strong></span>
           </div>
           ${notesPreview ? `<p class="recipe-card-note">${escapeHtml(notesPreview)}</p>` : ""}
           ${dateStr ? `<div class="recipe-card-footer"><span class="recipe-card-date">${dateStr}</span></div>` : ""}
         </div>
       </article>
     `;
-  }).join("");
+    })
+    .join("");
 
   // Shared file input for photo uploads (created once per render call, recycled via id)
   let imgInput = $("#library-img-input");
@@ -698,8 +904,8 @@ function renderLibrary() {
     document.body.appendChild(imgInput);
   }
 
-  $$(".recipe-card-img").forEach(imgDiv => {
-    imgDiv.addEventListener("click", e => {
+  $$(".recipe-card-img").forEach((imgDiv) => {
+    imgDiv.addEventListener("click", (e) => {
       e.stopPropagation();
       const recipeId = imgDiv.dataset.recipeId;
       imgInput.onchange = async () => {
@@ -708,7 +914,7 @@ function renderLibrary() {
         if (!file) return;
         try {
           const dataUrl = await compressImage(file);
-          const idx = state.recipes.findIndex(r => r.id === recipeId);
+          const idx = state.recipes.findIndex((r) => r.id === recipeId);
           if (idx >= 0) {
             state.recipes[idx].image = dataUrl;
             if (state.current.id === recipeId) state.current.image = dataUrl;
@@ -716,25 +922,41 @@ function renderLibrary() {
             renderLibrary();
             showToast("Foto gespeichert");
           }
-        } catch { showToast("Foto konnte nicht geladen werden"); }
+        } catch {
+          showToast("Foto konnte nicht geladen werden");
+        }
       };
       imgInput.click();
     });
   });
 
-  $$(".recipe-card").forEach(card => {
-    card.addEventListener("click", e => {
-      if (e.target.closest("[data-delete]") || e.target.closest(".recipe-card-img")) return;
+  $$(".recipe-card").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (
+        e.target.closest("[data-delete]") ||
+        e.target.closest(".recipe-card-img")
+      )
+        return;
       loadRecipe(card.dataset.id);
     });
   });
-  $$("[data-delete]").forEach(btn => {
-    btn.addEventListener("click", async e => {
+  $$("[data-dup]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      duplicateRecipe(btn.dataset.dup);
+    });
+  });
+  $$("[data-delete]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = btn.dataset.delete;
-      const ok = await askConfirm("Dieses Rezept wirklich löschen?", { title: "Rezept löschen", confirmText: "Löschen", danger: true });
+      const ok = await askConfirm("Dieses Rezept wirklich löschen?", {
+        title: "Rezept löschen",
+        confirmText: "Löschen",
+        danger: true,
+      });
       if (ok) {
-        state.recipes = state.recipes.filter(r => r.id !== id);
+        state.recipes = state.recipes.filter((r) => r.id !== id);
         saveRecipes();
         renderLibrary();
         showToast("Rezept gelöscht");
@@ -751,13 +973,13 @@ function newRecipe() {
     type: "milcheis",
     machineCap: 800,
     rows: [],
-    notes: ""
+    notes: "",
   };
   applyCurrentToUI();
 }
 
 function loadRecipe(id) {
-  const r = state.recipes.find(x => x.id === id);
+  const r = state.recipes.find((x) => x.id === id);
   if (!r) return;
   state.current = JSON.parse(JSON.stringify(r));
   applyCurrentToUI();
@@ -770,6 +992,7 @@ function applyCurrentToUI() {
   $("#recipe-type").value = state.current.type;
   $("#machine-cap").value = String(state.current.machineCap);
   $("#recipe-notes").value = state.current.notes || "";
+  $("#copy-recipe").hidden = !state.current.id;
   renderIngredientRows();
 }
 
@@ -778,14 +1001,19 @@ function saveCurrentRecipe() {
     showToast("Bitte zuerst Zutaten hinzufügen");
     return;
   }
-  state.current.title = $("#recipe-title-display").textContent.trim() || "Ohne Titel";
+  state.current.title =
+    $("#recipe-title-display").textContent.trim() || "Ohne Titel";
   state.current.notes = $("#recipe-notes").value;
   state.current.updatedAt = Date.now();
 
   if (state.current.id) {
-    const idx = state.recipes.findIndex(r => r.id === state.current.id);
-    if (idx >= 0) state.recipes[idx] = JSON.parse(JSON.stringify(state.current));
-    else { state.current.id = uid(); state.recipes.push(JSON.parse(JSON.stringify(state.current))); }
+    const idx = state.recipes.findIndex((r) => r.id === state.current.id);
+    if (idx >= 0)
+      state.recipes[idx] = JSON.parse(JSON.stringify(state.current));
+    else {
+      state.current.id = uid();
+      state.recipes.push(JSON.parse(JSON.stringify(state.current)));
+    }
   } else {
     state.current.id = uid();
     state.current.createdAt = Date.now();
@@ -795,17 +1023,26 @@ function saveCurrentRecipe() {
   showToast("Rezept gespeichert");
 }
 
-
 /* ============== ZUTATEN-DATENBANK ============== */
 function renderDatabase() {
   const tbody = $("#db-tbody");
-  const cats = ["Milch", "Zucker", "Bindemittel", "Frucht", "Aroma", "Sonstige"];
+  const cats = [
+    "Milch",
+    "Zucker",
+    "Bindemittel",
+    "Frucht",
+    "Aroma",
+    "Sonstige",
+  ];
   const sorted = [...state.ingredients].sort((a, b) => {
-    const ca = cats.indexOf(a.cat), cb = cats.indexOf(b.cat);
+    const ca = cats.indexOf(a.cat),
+      cb = cats.indexOf(b.cat);
     if (ca !== cb) return ca - cb;
     return a.name.localeCompare(b.name, "de");
   });
-  tbody.innerHTML = sorted.map(i => `
+  tbody.innerHTML = sorted
+    .map(
+      (i) => `
     <tr data-id="${i.id}">
       <td><strong>${escapeHtml(i.name)}</strong></td>
       <td><span class="ing-cat">${escapeHtml(i.cat)}</span></td>
@@ -818,15 +1055,20 @@ function renderDatabase() {
         ${i.custom ? `<button class="row-action" data-del-ing="${i.id}" aria-label="Löschen">×</button>` : ""}
       </td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  $$("[data-del-ing]").forEach(btn => {
+  $$("[data-del-ing]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.delIng;
-      const ing = state.ingredients.find(i => i.id === id);
-      const ok = await askConfirm(`„${ing ? ing.name : "Diese Zutat"}" wirklich löschen?`, { title: "Zutat löschen", confirmText: "Löschen", danger: true });
+      const ing = state.ingredients.find((i) => i.id === id);
+      const ok = await askConfirm(
+        `„${ing ? ing.name : "Diese Zutat"}" wirklich löschen?`,
+        { title: "Zutat löschen", confirmText: "Löschen", danger: true },
+      );
       if (ok) {
-        state.ingredients = state.ingredients.filter(i => i.id !== id);
+        state.ingredients = state.ingredients.filter((i) => i.id !== id);
         saveIngredients();
         renderDatabase();
       }
@@ -837,13 +1079,35 @@ function renderDatabase() {
 async function addCustomIngredient() {
   const data = await askForm("Neue Zutat", [
     { name: "name", label: "Name", placeholder: "z. B. Mango-Püree" },
-    { name: "cat", label: "Kategorie", type: "select", value: "Sonstige",
-      options: ["Milch", "Zucker", "Bindemittel", "Frucht", "Aroma", "Sonstige"] },
+    {
+      name: "cat",
+      label: "Kategorie",
+      type: "select",
+      value: "Sonstige",
+      options: [
+        "Milch",
+        "Zucker",
+        "Bindemittel",
+        "Frucht",
+        "Aroma",
+        "Sonstige",
+      ],
+    },
     { name: "ts", label: "Trockenmasse %", type: "number", value: "0" },
     { name: "fett", label: "Fett %", type: "number", value: "0" },
     { name: "zucker", label: "Zucker %", type: "number", value: "0" },
-    { name: "pac", label: "PAC (Saccharose = 100)", type: "number", value: "0" },
-    { name: "pod", label: "POD (Saccharose = 100)", type: "number", value: "0" }
+    {
+      name: "pac",
+      label: "PAC (Saccharose = 100)",
+      type: "number",
+      value: "0",
+    },
+    {
+      name: "pod",
+      label: "POD (Saccharose = 100)",
+      type: "number",
+      value: "0",
+    },
   ]);
   if (!data || !data.name || !data.name.trim()) return;
   const id = "custom_" + Date.now().toString(36);
@@ -856,7 +1120,7 @@ async function addCustomIngredient() {
     zucker: parseFloat(data.zucker) || 0,
     pac: parseFloat(data.pac) || 0,
     pod: parseFloat(data.pod) || 0,
-    custom: true
+    custom: true,
   });
   saveIngredients();
   renderDatabase();
@@ -865,22 +1129,27 @@ async function addCustomIngredient() {
 
 /* ============== REFERENCE ============== */
 function renderReference() {
-  ["milcheis", "fruchteis"].forEach(type => {
+  ["milcheis", "fruchteis"].forEach((type) => {
     const ul = $("#ref-" + type);
     const m = TARGETS[type].metrics;
-    ul.innerHTML = Object.entries(m).map(([k, v]) =>
-      `<li>
+    ul.innerHTML = Object.entries(m)
+      .map(
+        ([k, v]) =>
+          `<li>
         <span>${v.label}</span>
         <span class="ref-target">${fmt(v.ideal[0])}–${fmt(v.ideal[1])}${v.unit ? " " + v.unit : ""}</span>
-      </li>`
-    ).join("");
+      </li>`,
+      )
+      .join("");
   });
 }
 
 /* ============== THEME ============== */
 function initTheme() {
   const t = $(".theme-toggle");
-  let d = state.ui.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+  let d =
+    state.ui.theme ||
+    (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
   document.documentElement.setAttribute("data-theme", d);
   setToggleIcon(d);
   t.addEventListener("click", () => {
@@ -893,14 +1162,18 @@ function initTheme() {
 }
 function setToggleIcon(d) {
   const t = $(".theme-toggle");
-  t.innerHTML = d === "dark"
-    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>'
-    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  t.innerHTML =
+    d === "dark"
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 }
 
 /* ============== EXPORT / IMPORT ============== */
 function exportRecipes() {
-  if (!state.recipes.length) { showToast("Keine Rezepte zum Exportieren"); return; }
+  if (!state.recipes.length) {
+    showToast("Keine Rezepte zum Exportieren");
+    return;
+  }
   const json = JSON.stringify(state.recipes, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -916,24 +1189,38 @@ function exportRecipes() {
 function importRecipes(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = async e => {
+  reader.onload = async (e) => {
     let imported;
-    try { imported = JSON.parse(e.target.result); }
-    catch { showToast("Ungültige Datei — kein gültiges JSON"); return; }
-    if (!Array.isArray(imported)) { showToast("Ungültiges Format"); return; }
-    const valid = imported.filter(r => r && r.id && Array.isArray(r.rows));
-    if (!valid.length) { showToast("Keine gültigen Rezepte gefunden"); return; }
+    try {
+      imported = JSON.parse(e.target.result);
+    } catch {
+      showToast("Ungültige Datei — kein gültiges JSON");
+      return;
+    }
+    if (!Array.isArray(imported)) {
+      showToast("Ungültiges Format");
+      return;
+    }
+    const valid = imported.filter((r) => r && r.id && Array.isArray(r.rows));
+    if (!valid.length) {
+      showToast("Keine gültigen Rezepte gefunden");
+      return;
+    }
 
-    const newIds = new Set(valid.map(r => r.id));
-    const existing = state.recipes.filter(r => newIds.has(r.id));
+    const newIds = new Set(valid.map((r) => r.id));
+    const existing = state.recipes.filter((r) => newIds.has(r.id));
     let msg = `${valid.length} Rezept(e) gefunden.`;
-    if (existing.length) msg += ` ${existing.length} davon bereits vorhanden — überschreiben?`;
+    if (existing.length)
+      msg += ` ${existing.length} davon bereits vorhanden — überschreiben?`;
 
-    const ok = await askConfirm(msg, { title: "Rezepte importieren", confirmText: "Importieren" });
+    const ok = await askConfirm(msg, {
+      title: "Rezepte importieren",
+      confirmText: "Importieren",
+    });
     if (!ok) return;
 
     // Merge: vorhandene überschreiben, neue anfügen
-    state.recipes = state.recipes.filter(r => !newIds.has(r.id));
+    state.recipes = state.recipes.filter((r) => !newIds.has(r.id));
     state.recipes.push(...valid);
     saveRecipes();
     renderLibrary();
@@ -944,7 +1231,13 @@ function importRecipes(file) {
 
 /* ============== HELPERS ============== */
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ],
+  );
 }
 
 /* ============== INIT ============== */
@@ -953,49 +1246,66 @@ function init() {
   initTheme();
 
   // Tabs
-  $$(".tab").forEach(t => t.addEventListener("click", () => setTab(t.dataset.tab)));
+  $$(".tab").forEach((t) =>
+    t.addEventListener("click", () => setTab(t.dataset.tab)),
+  );
 
   // Recipe controls
-  $("#recipe-type").addEventListener("change", e => {
+  $("#recipe-type").addEventListener("change", (e) => {
     state.current.type = e.target.value;
     updateBilanz();
   });
-  $("#machine-cap").addEventListener("change", e => {
+  $("#machine-cap").addEventListener("change", (e) => {
     state.current.machineCap = parseFloat(e.target.value) || 800;
     renderIngredientRows();
   });
-  $("#recipe-title-display").addEventListener("input", e => {
+  $("#recipe-title-display").addEventListener("input", (e) => {
     state.current.title = e.target.textContent;
   });
-  $("#recipe-notes").addEventListener("input", e => {
+  $("#recipe-notes").addEventListener("input", (e) => {
     state.current.notes = e.target.value;
   });
 
   $("#reset-recipe").addEventListener("click", async () => {
     if (state.current.rows.length) {
-      const ok = await askConfirm("Möchtest du das aktuelle Rezept verwerfen und ein neues beginnen?", { title: "Rezept leeren", confirmText: "Leeren", danger: true });
+      const ok = await askConfirm(
+        "Möchtest du das aktuelle Rezept verwerfen und ein neues beginnen?",
+        { title: "Rezept leeren", confirmText: "Leeren", danger: true },
+      );
       if (!ok) return;
     }
     newRecipe();
     showToast("Rezept geleert");
   });
-$("#save-recipe").addEventListener("click", saveCurrentRecipe);
-  $("#add-ingredient-row").addEventListener("click", () => $("#ing-search").focus());
+  $("#save-recipe").addEventListener("click", saveCurrentRecipe);
+  $("#copy-recipe").addEventListener("click", () => {
+    if (state.current.id) {
+      const newId = duplicateRecipe(state.current.id);
+      if (newId) loadRecipe(newId);
+    }
+  });
+  $("#add-ingredient-row").addEventListener("click", () =>
+    $("#ing-search").focus(),
+  );
   $("#export-recipes").addEventListener("click", exportRecipes);
-  $("#import-recipes").addEventListener("click", () => $("#import-file").click());
-  $("#import-file").addEventListener("change", e => {
+  $("#import-recipes").addEventListener("click", () =>
+    $("#import-file").click(),
+  );
+  $("#import-file").addEventListener("change", (e) => {
     importRecipes(e.target.files[0]);
     e.target.value = "";
   });
   // Form-Filter (Trocken / Flüssig / Alle)
-  $$(".form-filter-btn").forEach(btn => {
+  $$(".form-filter-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const f = btn.dataset.formFilter;
       state.ui.formFilter = f;
       saveUI();
-      $$(".form-filter-btn").forEach(b => b.classList.toggle("is-active", b === btn));
+      $$(".form-filter-btn").forEach((b) =>
+        b.classList.toggle("is-active", b === btn),
+      );
       // Zeilen ein-/ausblenden ohne komplettes Re-Render (Fokus bleibt erhalten)
-      $$("#ing-tbody tr").forEach(tr => {
+      $$("#ing-tbody tr").forEach((tr) => {
         const rowForm = tr.dataset.form;
         if (!rowForm) return;
         tr.classList.toggle("row-filtered", f !== "all" && rowForm !== f);
@@ -1005,11 +1315,11 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
 
   // Autocomplete
   const search = $("#ing-search");
-  search.addEventListener("input", e => {
+  search.addEventListener("input", (e) => {
     acIndex = -1;
     renderAutocomplete(e.target.value);
   });
-  search.addEventListener("keydown", e => {
+  search.addEventListener("keydown", (e) => {
     const ac = $("#autocomplete");
     if (ac.hidden) return;
     const items = ac.querySelectorAll(".autocomplete-item");
@@ -1031,11 +1341,11 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
     }
   });
   search.addEventListener("blur", () => {
-    setTimeout(() => $("#autocomplete").hidden = true, 150);
+    setTimeout(() => ($("#autocomplete").hidden = true), 150);
   });
 
   const qtyInput = $("#ing-qty-input");
-  qtyInput.addEventListener("keydown", e => {
+  qtyInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (!pendingIngId) return;
@@ -1059,7 +1369,9 @@ $("#save-recipe").addEventListener("click", saveCurrentRecipe);
   renderReference();
   // Gespeicherten Form-Filter wiederherstellen
   const savedFilter = state.ui.formFilter || "all";
-  $$(".form-filter-btn").forEach(b => b.classList.toggle("is-active", b.dataset.formFilter === savedFilter));
+  $$(".form-filter-btn").forEach((b) =>
+    b.classList.toggle("is-active", b.dataset.formFilter === savedFilter),
+  );
   setTab(state.ui.tab || "recipe");
 }
 
