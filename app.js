@@ -511,7 +511,7 @@ function renderIngredientRows() {
         <input type="checkbox" class="cooking-check" />
       </td>
       <td class="col-form">
-        <button class="form-tag form-tag-${form}" data-toggle-form="${idx}" title="Klicken zum Wechseln (${form === "F" ? "Flüssig → Trocken" : "Trocken → Flüssig"})">${form}</button>
+        <span class="form-tag form-tag-${form}" data-toggle-form="${idx}" role="button" tabindex="0" title="Klicken zum Wechseln · Doppelklick zum Zurücksetzen">${form}</span>
       </td>
       <td>
         <div class="ing-name-cell">
@@ -587,12 +587,17 @@ function renderIngredientRows() {
     });
   });
 
-  $$("[data-toggle-form]").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+  $$("[data-toggle-form]").forEach((el) => {
+    el.addEventListener("click", (e) => {
       const idx = +e.currentTarget.dataset.toggleForm;
       const row = state.current.rows[idx];
       const current = getRowForm(row);
       row.formOverride = current === "T" ? "F" : "T";
+      renderIngredientRows();
+    });
+    el.addEventListener("dblclick", (e) => {
+      const idx = +e.currentTarget.dataset.toggleForm;
+      delete state.current.rows[idx].formOverride;
       renderIngredientRows();
     });
   });
