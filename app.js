@@ -239,6 +239,19 @@ function getRowForm(row) {
   return getForm(findIngredient(row.ingId));
 }
 
+function formTagSvg(form, idx) {
+  const fill   = form === "T" ? "rgba(199,154,58,0.22)"  : "rgba(74,144,184,0.22)";
+  const stroke = form === "T" ? "rgba(199,154,58,0.55)"  : "rgba(74,144,184,0.55)";
+  const color  = form === "T" ? "#8a6810" : "#2d6985";
+  const tip    = form === "T" ? "Trocken → Flüssig" : "Flüssig → Trocken";
+  return `<svg data-toggle-form="${idx}" role="button" tabindex="0" title="Klicken: ${tip} · Doppelklick: Reset"
+      width="22" height="22" viewBox="0 0 22 22"
+      style="cursor:pointer;flex-shrink:0;display:inline-block;vertical-align:middle">
+    <circle cx="11" cy="11" r="10" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+    <text x="11" y="15.5" text-anchor="middle" font-size="11" font-weight="700" fill="${color}" font-family="inherit">${form}</text>
+  </svg>`;
+}
+
 function fmt(num, decimals = 1) {
   if (!isFinite(num)) return "—";
   return num.toFixed(decimals).replace(/\.0$/, "").replace(".", ",");
@@ -547,7 +560,7 @@ function renderIngredientRows() {
       <td class="num col-batch scaled-cell">${fmt(scaled, 1)} g</td>
     ` : `
       <td class="col-form">
-        <span class="form-tag form-tag-${form}" data-toggle-form="${idx}" role="button" tabindex="0" title="Klicken zum Wechseln · Doppelklick zum Zurücksetzen">${form}</span>
+        ${formTagSvg(form, idx)}
       </td>
       <td>
         <div class="ing-name-cell">
