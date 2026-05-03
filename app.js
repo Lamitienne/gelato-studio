@@ -953,15 +953,12 @@ function renderLibrary() {
       const statusKey = rec.rows.length ? getOverallStatus(calc, rec.type) : "";
       const statusLabel = STATUS_LABELS[statusKey] || "";
 
-      const topIngs = [...rec.rows]
+      const SPECIAL_CATS = new Set(["Frucht", "Aroma"]);
+      const topIngs = rec.rows
         .filter((r) => r.qty > 0)
-        .sort((a, b) => b.qty - a.qty)
-        .slice(0, 3)
-        .map((r) => {
-          const ing = findIngredient(r.ingId);
-          return ing ? ing.name : null;
-        })
-        .filter(Boolean);
+        .map((r) => findIngredient(r.ingId))
+        .filter((ing) => ing && SPECIAL_CATS.has(ing.cat))
+        .map((ing) => ing.name);
 
       const notesPreview = (rec.notes || "").split("\n")[0].trim().slice(0, 90);
       const dateStr = fmtDate(rec.updatedAt || rec.createdAt);
