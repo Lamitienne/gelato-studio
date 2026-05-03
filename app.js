@@ -838,6 +838,16 @@ function addRow(ingId, qty = 0) {
   renderIngredientRows();
 }
 
+function insertBase() {
+  const baseId = state.current.type === "fruchteis" ? "base-frucht" : "base-milch";
+  if (state.current.rows.some((r) => r.ingId === baseId)) {
+    showToast("Basis bereits im Rezept vorhanden");
+    return;
+  }
+  state.current.rows.unshift({ ingId: baseId, qty: 30 });
+  renderIngredientRows();
+}
+
 function selectIngredient(id) {
   const ing = findIngredient(id);
   if (!ing) return;
@@ -1409,6 +1419,7 @@ function init() {
     }
   });
   $("#toggle-cooking").addEventListener("click", toggleCookingMode);
+  $("#insert-base-btn").addEventListener("click", insertBase);
   $("#add-ingredient-row").addEventListener("click", () =>
     $("#ing-search").focus(),
   );
