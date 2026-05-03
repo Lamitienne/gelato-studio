@@ -206,6 +206,11 @@ function getForm(ing) {
   return (Number(ing.ts) || 0) >= 50 ? "T" : "F";
 }
 
+function getRowForm(row) {
+  if (row.formOverride === "F" || row.formOverride === "T") return row.formOverride;
+  return getForm(findIngredient(row.ingId));
+}
+
 function fmt(num, decimals = 1) {
   if (!isFinite(num)) return "—";
   return num.toFixed(decimals).replace(/\.0$/, "").replace(".", ",");
@@ -421,7 +426,7 @@ function updateFormSummary(total, scale) {
   state.current.rows.forEach((r) => {
     const ing = findIngredient(r.ingId);
     const q = Number(r.qty) || 0;
-    if (getForm(ing) === "T") dryOrig += q;
+    if (getRowForm(r) === "T") dryOrig += q;
     else liqOrig += q;
   });
   $("#sum-dry-orig").textContent = `(${fmt(dryOrig, 1)} g orig.)`;
@@ -478,18 +483,18 @@ function renderIngredientRows() {
   const displayOrder = state.current.rows
     .map((row, idx) => ({ row, idx }))
     .sort((a, b) => {
-      const fa = getForm(findIngredient(a.row.ingId));
-      const fb = getForm(findIngredient(b.row.ingId));
+      const fa = getRowForm(a.row);
+      const fb = getRowForm(b.row);
       if (fa === fb) return 0;
       return fa === "T" ? -1 : 1;
     });
 
   displayOrder.forEach(({ row, idx }) => {
-    const ing = findIngredient(row.ingId);
-    const form = getForm(ing);
+    const form = getRowForm(row);
     const tr = document.createElement("tr");
     tr.dataset.form = form;
     if (filter !== "all" && filter !== form) tr.classList.add("row-filtered");
+    const ing = findIngredient(row.ingId);
     const qtyValue = Number(row.qty) || 0;
     const pct = total > 0 ? (qtyValue / total) * 100 : 0;
     const scaled = qtyValue * scale;
@@ -498,7 +503,7 @@ function renderIngredientRows() {
         <input type="checkbox" class="cooking-check" />
       </td>
       <td class="col-form">
-        <span class="form-tag form-tag-${form}" title="${form === "F" ? "Flüssig" : "Trocken"}">${form}</span>
+        <button class="form-tag form-tag-${form}" data-toggle-form="${idx}" title="Klicken zum Wechseln (${form === "F" ? "Flüssig → Trocken" : "Trocken → Flüssig"})">${form}</button>
       </td>
       <td>
         <div class="ing-name-cell">
@@ -570,6 +575,16 @@ function renderIngredientRows() {
     btn.addEventListener("click", (e) => {
       const idx = +e.currentTarget.dataset.remove;
       state.current.rows.splice(idx, 1);
+      renderIngredientRows();
+    });
+  });
+
+  $$("[data-toggle-form]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const idx = +e.currentTarget.dataset.toggleForm;
+      const row = state.current.rows[idx];
+      const current = getRowForm(row);
+      row.formOverride = current === "T" ? "F" : "T";
       renderIngredientRows();
     });
   });
