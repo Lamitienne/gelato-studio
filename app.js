@@ -689,7 +689,7 @@ function generateAdvice(r, targets) {
     [
       "pac",
       "PAC",
-      "Anteil Dextrose oder Invertzucker erhöhen",
+      "Anteil Dextrose oder Trockenglukose erhöhen",
       "Saccharose / Glukose-Pulver einsetzen statt Dextrose",
     ],
     [
@@ -1343,6 +1343,20 @@ function init() {
     $("#ing-search").focus(),
   );
   $("#export-recipes").addEventListener("click", exportRecipes);
+  $("#reset-all-data").addEventListener("click", async () => {
+    const ok = await askConfirm(
+      "Möchtest du alle Rezepte und Zutaten auf die Standardwerte zurücksetzen? Deine eigenen Änderungen gehen verloren.",
+      {
+        title: "Daten zurücksetzen",
+        confirmText: "Zurücksetzen",
+        danger: true,
+      },
+    );
+    if (!ok) return;
+    storage.remove(STORAGE_KEYS.ingredients);
+    storage.remove(STORAGE_KEYS.recipes);
+    location.reload();
+  });
   $("#import-recipes").addEventListener("click", () =>
     $("#import-file").click(),
   );
