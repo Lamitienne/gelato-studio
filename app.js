@@ -88,10 +88,18 @@ function loadStorage() {
   try {
     const recData = storage.get(STORAGE_KEYS.recipes);
     const parsedRec = recData ? JSON.parse(recData) : null;
-    state.recipes =
-      Array.isArray(parsedRec) && parsedRec.length
-        ? parsedRec
-        : JSON.parse(JSON.stringify(DEFAULT_RECIPES));
+    if (Array.isArray(parsedRec) && parsedRec.length) {
+      state.recipes = parsedRec;
+      // Fehlende Beispielrezepte ergänzen ohne eigene zu überschreiben
+      const savedIds = new Set(parsedRec.map((r) => r.id));
+      DEFAULT_RECIPES.forEach((def) => {
+        if (!savedIds.has(def.id)) {
+          state.recipes.push(JSON.parse(JSON.stringify(def)));
+        }
+      });
+    } else {
+      state.recipes = JSON.parse(JSON.stringify(DEFAULT_RECIPES));
+    }
   } catch {
     state.recipes = JSON.parse(JSON.stringify(DEFAULT_RECIPES));
   }
