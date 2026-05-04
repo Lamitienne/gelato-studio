@@ -478,18 +478,17 @@ function setTab(name) {
 
 /* ============== RENDER: ZUTATEN ZEILEN ============== */
 function updateFormSummary(total, scale) {
-  let dryOrig = 0,
-    liqOrig = 0;
+  let dryOrig = 0, liqOrig = 0, dryScaled = 0, liqScaled = 0;
   state.current.rows.forEach((r) => {
-    const ing = findIngredient(r.ingId);
     const q = Number(r.qty) || 0;
-    if (getRowForm(r) === "T") dryOrig += q;
-    else liqOrig += q;
+    const s = r.fixedChargeQty != null ? r.fixedChargeQty : q * scale;
+    if (getRowForm(r) === "T") { dryOrig += q; dryScaled += s; }
+    else { liqOrig += q; liqScaled += s; }
   });
   $("#sum-dry-orig").textContent = `(${fmt(dryOrig, 1)} g orig.)`;
   $("#sum-liq-orig").textContent = `(${fmt(liqOrig, 1)} g orig.)`;
-  $("#sum-dry-scaled").textContent = fmt(dryOrig * scale, 1) + " g";
-  $("#sum-liq-scaled").textContent = fmt(liqOrig * scale, 1) + " g";
+  $("#sum-dry-scaled").textContent = fmt(dryScaled, 1) + " g";
+  $("#sum-liq-scaled").textContent = fmt(liqScaled, 1) + " g";
 }
 
 function updateScaleBanner(total, target, scale) {
@@ -565,7 +564,7 @@ function renderIngredientRows() {
     const ing = findIngredient(row.ingId);
     const qtyValue = Number(row.qty) || 0;
     const pct = total > 0 ? (qtyValue / total) * 100 : 0;
-    const scaled = qtyValue * scale;
+    const scaled = row.fixedChargeQty != null ? row.fixedChargeQty : qtyValue * scale;
     tr.innerHTML = cooking ? `
       <td class="col-check">
         <input type="checkbox" class="cooking-check" />
@@ -631,10 +630,11 @@ function renderIngredientRows() {
         const origIdx = +rowInp.dataset.idx;
         const r = state.current.rows[origIdx];
         const rowQty = Number(r.qty) || 0;
+        const rowScaled = r.fixedChargeQty != null ? r.fixedChargeQty : rowQty * scale2;
         const c = row.querySelectorAll("td.num");
         c[1].textContent =
           total2 > 0 ? fmt((rowQty / total2) * 100, 1) + " %" : "0 %";
-        c[2].textContent = fmt(rowQty * scale2, 1) + " g";
+        c[2].textContent = fmt(rowScaled, 1) + " g";
       });
 
       $("#sum-mass").textContent = fmt(total2, 1) + " g";
@@ -857,8 +857,9 @@ function insertBase() {
     showToast("Basis bereits im Rezept vorhanden");
     return;
   }
-  const qty = BASE_RECIPES[state.current.type].dosagePerKg;
-  state.current.rows.unshift({ ingId: baseId, qty });
+  const recipe = BASE_RECIPES[state.current.type];
+  const fixedChargeQty = Math.round((state.current.machineCap / 1000) * recipe.dosagePerKg);
+  state.current.rows.unshift({ ingId: baseId, qty: recipe.dosagePerKg, fixedChargeQty });
   renderIngredientRows();
 }
 
