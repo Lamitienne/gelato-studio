@@ -1030,14 +1030,17 @@ function renderProductionLog() {
               <thead><tr><th>Zutat</th><th class="snap-qty">Menge</th></tr></thead>
               <tbody>${snapRows}</tbody>
             </table>
-            <div class="snap-metrics">
-              <span>TS ${fmt(c.ts, 1)} %</span>
-              <span>Fett ${fmt(c.fett, 1)} %</span>
-              <span>Zucker ${fmt(c.zucker, 1)} %</span>
-              <span>PAC ${fmt(c.pac, 0)}</span>
-              <span>POD ${fmt(c.pod, 0)}</span>
-              <span>Stab ${fmt(c.stab, 2)} %</span>
-            </div>
+            <table class="snap-table snap-metrics-table">
+              <thead><tr><th>Kennwert</th><th class="snap-qty">Wert</th></tr></thead>
+              <tbody>
+                <tr><td>Trockenmasse</td><td class="snap-qty">${fmt(c.ts, 1)} %</td></tr>
+                <tr><td>Fett</td><td class="snap-qty">${fmt(c.fett, 1)} %</td></tr>
+                <tr><td>Zucker</td><td class="snap-qty">${fmt(c.zucker, 1)} %</td></tr>
+                <tr><td>PAC</td><td class="snap-qty">${fmt(c.pac, 0)}</td></tr>
+                <tr><td>POD</td><td class="snap-qty">${fmt(c.pod, 0)}</td></tr>
+                <tr><td>Stabilisator</td><td class="snap-qty">${fmt(c.stab, 2)} %</td></tr>
+              </tbody>
+            </table>
           </div>
         </details>`;
     }
