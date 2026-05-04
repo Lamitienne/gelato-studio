@@ -188,13 +188,13 @@ a {
     gap: var(--space-6);
     padding: calc(var(--space-4) + var(--safe-area-inset-top)) var(--space-6)
         var(--space-4);
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
     border-bottom: 1px solid var(--color-divider);
     position: sticky;
     top: 0;
     z-index: 50;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .brand {
@@ -229,7 +229,12 @@ a {
     display: flex;
     gap: var(--space-1);
     justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+}
+.topnav::-webkit-scrollbar {
+    display: none;
 }
 
 @media (max-width: 480px) {
@@ -650,7 +655,7 @@ textarea:focus {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
-    width: 320px;
+    width: min(320px, calc(100vw - var(--space-8)));
     max-height: 320px;
     overflow-y: auto;
     z-index: 20;
@@ -1143,7 +1148,7 @@ textarea:focus {
 /* ============== TOAST ============== */
 .toast {
     position: fixed;
-    bottom: var(--space-6);
+    bottom: calc(var(--space-6) + var(--safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     background: var(--color-text);
@@ -1177,14 +1182,16 @@ textarea:focus {
     .topnav {
         grid-column: 1 / -1;
         order: 3;
-        overflow-x: auto;
     }
     main {
-        padding: var(--space-5) var(--space-4) var(--space-12);
+        padding: var(--space-5) var(--space-4)
+            calc(var(--space-12) + var(--safe-area-inset-bottom));
     }
     .panel-head h1 {
         font-size: var(--text-lg);
     }
+}
+
 @media (max-width: 480px) {
     .panel-head {
         flex-direction: column;
@@ -1200,6 +1207,21 @@ textarea:focus {
     }
     .metrics-grid {
         grid-template-columns: 1fr;
+    }
+    .card-tools {
+        flex-wrap: wrap;
+    }
+    .brand-sub {
+        display: none;
+    }
+}
+
+@media (min-width: 1025px) {
+    .card-tools input[type="search"] {
+        width: 240px;
+    }
+    .library-toolbar input[type="search"] {
+        width: 260px;
     }
 }
 
