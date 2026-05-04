@@ -115,6 +115,7 @@
                     Rezept
                 </button>
                 <button class="tab" data-tab="library">Rezeptbuch</button>
+                <button class="tab" data-tab="production">Produktion</button>
                 <button class="tab" data-tab="ingredients">Zutaten</button>
                 <button class="tab" data-tab="reference">Zielwerte</button>
             </nav>
@@ -170,6 +171,9 @@
                         </button>
                         <button class="btn-ghost" id="toggle-cooking" hidden>
                             Kochmodus
+                        </button>
+                        <button class="btn-ghost" id="log-production" hidden>
+                            Produktion erfassen
                         </button>
                         <button class="btn-primary" id="save-recipe">
                             Speichern
@@ -381,6 +385,18 @@
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <!-- ============== PRODUKTION ============== -->
+            <section class="panel" data-panel="production" hidden>
+                <div class="panel-head">
+                    <div>
+                        <h1>Produktion</h1>
+                        <span class="hint">Was wurde wann produziert — und wie war das Eis?</span>
+                    </div>
+                    <button class="btn-primary" id="add-production">+ Produktion</button>
+                </div>
+                <div id="production-list"></div>
             </section>
 
             <!-- ============== REZEPTBUCH ============== -->

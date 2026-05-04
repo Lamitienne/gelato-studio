@@ -28,6 +28,7 @@
 const STORAGE_KEYS = {
   ingredients: "gs_ingredients_v1",
   recipes: "gs_recipes_v1",
+  productions: "gs_productions_v1",
   ui: "gs_ui_v1",
 };
 
@@ -79,6 +80,7 @@ const storage = (() => {
 const state = {
   ingredients: [],
   recipes: [],
+  productions: [],
   current: {
     id: null,
     title: "Neues Rezept",
@@ -128,6 +130,13 @@ function loadStorage() {
   }
 
   try {
+    const prodData = storage.get(STORAGE_KEYS.productions);
+    state.productions = prodData ? JSON.parse(prodData) : [];
+  } catch {
+    state.productions = [];
+  }
+
+  try {
     state.ui = Object.assign(
       state.ui,
       JSON.parse(storage.get(STORAGE_KEYS.ui) || "{}"),
@@ -140,6 +149,9 @@ function saveIngredients() {
 }
 function saveRecipes() {
   storage.set(STORAGE_KEYS.recipes, JSON.stringify(state.recipes));
+}
+function saveProductions() {
+  storage.set(STORAGE_KEYS.productions, JSON.stringify(state.productions));
 }
 function saveUI() {
   storage.set(STORAGE_KEYS.ui, JSON.stringify(state.ui));
@@ -459,6 +471,7 @@ function setTab(name) {
   );
   $$(".panel").forEach((p) => (p.hidden = p.dataset.panel !== name));
   if (name === "library") renderLibrary();
+  if (name === "production") renderProductionLog();
   if (name === "ingredients") renderDatabase();
   if (name === "reference") renderReference();
 }
@@ -873,6 +886,168 @@ function resetIngSearch() {
   $("#ing-search").focus();
 }
 
+/* ============== PRODUKTIONSLOG ============== */
+function logProductionModal(prefill = {}) {
+  return new Promise((resolve) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-title">Produktion erfassen</div>
+        <form class="modal-form">
+          <div class="modal-fields">
+            <label class="modal-field">
+              <span>Datum</span>
+              <input name="date" type="date" value="${prefill.date || today}">
+            </label>
+            <label class="modal-field">
+              <span>Rezept</span>
+              <input name="recipeName" type="text" value="${escapeHtml(prefill.recipeName || "")}" placeholder="Rezeptname">
+            </label>
+            <label class="modal-field">
+              <span>Menge (g)</span>
+              <input name="qty" type="number" step="1" min="0" inputmode="decimal" value="${prefill.qty || ""}">
+            </label>
+            <div class="modal-field">
+              <span>Bewertung</span>
+              <div class="star-picker">
+                ${[1,2,3,4,5].map((n) => `<button type="button" class="star-btn" data-val="${n}">★</button>`).join("")}
+              </div>
+              <input type="hidden" name="rating" value="${prefill.rating || 0}">
+            </div>
+            <label class="modal-field">
+              <span>Notizen</span>
+              <textarea name="notes" rows="3" placeholder="Cremigkeit, Süsse, Abweichungen, Ideen …">${escapeHtml(prefill.notes || "")}</textarea>
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" data-act="cancel">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>`;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("show"));
+
+    const ratingInput = overlay.querySelector('input[name="rating"]');
+    const starBtns = [...overlay.querySelectorAll(".star-btn")];
+
+    function updateStars(n) {
+      ratingInput.value = n;
+      starBtns.forEach((b) => b.classList.toggle("star-active", +b.dataset.val <= n));
+    }
+    if (prefill.rating) updateStars(prefill.rating);
+
+    starBtns.forEach((b) => {
+      b.addEventListener("click", () => updateStars(+b.dataset.val));
+      b.addEventListener("mouseenter", () =>
+        starBtns.forEach((x) => x.classList.toggle("star-hover", +x.dataset.val <= +b.dataset.val))
+      );
+    });
+    overlay.querySelector(".star-picker").addEventListener("mouseleave", () =>
+      starBtns.forEach((b) => b.classList.remove("star-hover"))
+    );
+
+    const close = (val) => {
+      overlay.classList.remove("show");
+      setTimeout(() => overlay.remove(), 180);
+      document.removeEventListener("keydown", onKey);
+      resolve(val);
+    };
+    overlay.querySelector(".modal-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const f = e.target;
+      close({
+        date: f.elements.date.value,
+        recipeName: f.elements.recipeName.value.trim(),
+        qty: parseFloat(f.elements.qty.value) || 0,
+        rating: parseInt(ratingInput.value) || 0,
+        notes: f.elements.notes.value.trim(),
+      });
+    });
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close(null);
+      if (e.target.dataset?.act === "cancel") close(null);
+    });
+    const onKey = (e) => { if (e.key === "Escape") close(null); };
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => overlay.querySelector('input[name="date"]').focus(), 50);
+  });
+}
+
+async function logProduction(prefill = {}) {
+  const data = await logProductionModal(prefill);
+  if (!data) return;
+  state.productions.unshift({
+    id: uid(),
+    recipeId: prefill.recipeId || null,
+    recipeName: data.recipeName,
+    recipeType: prefill.recipeType || "",
+    date: data.date,
+    qty: data.qty,
+    rating: data.rating,
+    notes: data.notes,
+    createdAt: Date.now(),
+  });
+  saveProductions();
+  showToast("Produktion gespeichert");
+  if (state.ui.tab === "production") renderProductionLog();
+}
+
+function renderProductionLog() {
+  const list = $("#production-list");
+  if (!state.productions.length) {
+    list.innerHTML = `<div class="empty-state"><h3>Noch keine Einträge</h3><p>Erfasse deine erste Produktion über „+ Produktion" oder den Button im Rezept-Editor.</p></div>`;
+    return;
+  }
+  const sorted = [...state.productions].sort((a, b) => {
+    const da = new Date(a.date + "T12:00:00").getTime();
+    const db = new Date(b.date + "T12:00:00").getTime();
+    return da !== db ? db - da : (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  list.innerHTML = sorted.map((e) => {
+    const dateStr = e.date
+      ? new Date(e.date + "T12:00:00").toLocaleDateString("de-CH", { day: "numeric", month: "long", year: "numeric" })
+      : "—";
+    const stars = Array.from({ length: 5 }, (_, i) =>
+      `<span class="${i < e.rating ? "star-on" : "star-off"}">★</span>`
+    ).join("");
+    const typeLabel = e.recipeType ? TARGETS[e.recipeType]?.label : "";
+    return `
+      <div class="prod-entry">
+        <div class="prod-entry-head">
+          <div class="prod-entry-meta">
+            <span class="prod-date">${dateStr}</span>
+            ${typeLabel ? `<span class="tag ${e.recipeType}">${typeLabel}</span>` : ""}
+          </div>
+          <button class="row-action" data-del-prod="${e.id}" aria-label="Eintrag löschen">×</button>
+        </div>
+        <strong class="prod-recipe-name">${escapeHtml(e.recipeName || "—")}</strong>
+        <div class="prod-row">
+          ${e.rating ? `<span class="prod-stars">${stars}</span>` : ""}
+          ${e.qty ? `<span class="prod-qty">${fmt(e.qty, 0)} g</span>` : ""}
+        </div>
+        ${e.notes ? `<p class="prod-notes">${escapeHtml(e.notes)}</p>` : ""}
+      </div>`;
+  }).join("");
+
+  $$("[data-del-prod]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const ok = await askConfirm("Diesen Eintrag wirklich löschen?", {
+        title: "Eintrag löschen",
+        confirmText: "Löschen",
+        danger: true,
+      });
+      if (ok) {
+        state.productions = state.productions.filter((p) => p.id !== btn.dataset.delProd);
+        saveProductions();
+        renderProductionLog();
+      }
+    });
+  });
+}
+
 /* ============== RENDER: REZEPTBUCH ============== */
 function getOverallStatus(calc, type) {
   if (!calc || calc.total <= 0) return "";
@@ -1115,6 +1290,7 @@ function applyCurrentToUI() {
   $("#recipe-notes").value = state.current.notes || "";
   $("#copy-recipe").hidden = !state.current.id;
   $("#toggle-cooking").hidden = state.current.rows.length === 0;
+  $("#log-production").hidden = state.current.rows.length === 0;
 
   // Reset cooking mode UI classes if not active in state
   if (!state.ui.cookingMode) {
@@ -1421,6 +1597,15 @@ function init() {
     }
   });
   $("#toggle-cooking").addEventListener("click", toggleCookingMode);
+  $("#log-production").addEventListener("click", () =>
+    logProduction({
+      recipeId: state.current.id,
+      recipeName: state.current.title || "Neues Rezept",
+      recipeType: state.current.type,
+      qty: state.current.machineCap,
+    })
+  );
+  $("#add-production").addEventListener("click", () => logProduction({}));
   $("#insert-base-btn").addEventListener("click", insertBase);
   $("#add-ingredient-row").addEventListener("click", () =>
     $("#ing-search").focus(),
