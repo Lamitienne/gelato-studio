@@ -988,6 +988,7 @@ async function logProduction(prefill = {}) {
     qty: data.qty,
     rating: data.rating,
     notes: data.notes,
+    recipeSnapshot: prefill.recipeSnapshot || null,
     createdAt: Date.now(),
   });
   saveProductions();
@@ -1014,6 +1015,32 @@ function renderProductionLog() {
       `<span class="${i < e.rating ? "star-on" : "star-off"}">★</span>`
     ).join("");
     const typeLabel = e.recipeType ? TARGETS[e.recipeType]?.label : "";
+    let snapshotHtml = "";
+    if (e.recipeSnapshot) {
+      const s = e.recipeSnapshot;
+      const snapRows = s.rows.map((r) =>
+        `<tr><td>${escapeHtml(r.ingName)}</td><td class="snap-qty">${fmt(r.qty, 0)} g</td></tr>`
+      ).join("");
+      const c = s.calc;
+      snapshotHtml = `
+        <details class="prod-snapshot">
+          <summary class="prod-snapshot-toggle">Rezept</summary>
+          <div class="prod-snapshot-body">
+            <table class="snap-table">
+              <thead><tr><th>Zutat</th><th class="snap-qty">Menge</th></tr></thead>
+              <tbody>${snapRows}</tbody>
+            </table>
+            <div class="snap-metrics">
+              <span>TS ${fmt(c.ts, 1)} %</span>
+              <span>Fett ${fmt(c.fett, 1)} %</span>
+              <span>Zucker ${fmt(c.zucker, 1)} %</span>
+              <span>PAC ${fmt(c.pac, 0)}</span>
+              <span>POD ${fmt(c.pod, 0)}</span>
+              <span>Stab ${fmt(c.stab, 2)} %</span>
+            </div>
+          </div>
+        </details>`;
+    }
     return `
       <div class="prod-entry">
         <div class="prod-entry-head">
@@ -1029,6 +1056,7 @@ function renderProductionLog() {
           ${e.qty ? `<span class="prod-qty">${fmt(e.qty, 0)} g</span>` : ""}
         </div>
         ${e.notes ? `<p class="prod-notes">${escapeHtml(e.notes)}</p>` : ""}
+        ${snapshotHtml}
       </div>`;
   }).join("");
 
@@ -1597,14 +1625,32 @@ function init() {
     }
   });
   $("#toggle-cooking").addEventListener("click", toggleCookingMode);
-  $("#log-production").addEventListener("click", () =>
+  $("#log-production").addEventListener("click", () => {
+    const snapRows = state.current.rows.map((r) => {
+      const ing = findIngredient(r.ingId);
+      return { ingId: r.ingId, ingName: ing ? ing.name : r.ingId, qty: r.qty };
+    });
+    const snapCalc = calculate(state.current.rows);
     logProduction({
       recipeId: state.current.id,
       recipeName: state.current.title || "Neues Rezept",
       recipeType: state.current.type,
       qty: state.current.machineCap,
-    })
-  );
+      recipeSnapshot: {
+        rows: snapRows,
+        calc: {
+          total: snapCalc.total,
+          ts: snapCalc.ts,
+          fett: snapCalc.fett,
+          zucker: snapCalc.zucker,
+          pac: snapCalc.pac,
+          pod: snapCalc.pod,
+          stab: snapCalc.stab,
+          wasser: snapCalc.wasser,
+        },
+      },
+    });
+  });
   $("#add-production").addEventListener("click", () => logProduction({}));
   $("#insert-base-btn").addEventListener("click", insertBase);
   $("#add-ingredient-row").addEventListener("click", () =>
