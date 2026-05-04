@@ -159,7 +159,7 @@ const DEFAULT_INGREDIENTS = [
     cat: "Zucker",
     ts: 100.0,
     fett: 0.0,
-    zucker: 100.0,
+    zucker: 60.0,
     pac: 45.0,
     pod: 24.0,
   },

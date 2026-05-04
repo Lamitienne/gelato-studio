@@ -1498,12 +1498,14 @@ textarea:focus {
     font-weight: 700;
 }
 .form-filter-btn[data-form-filter="T"] .ff-tag {
-    background: color-mix(in srgb, #c79a3a 25%, transparent);
+    background: rgba(199, 154, 58, 0.22);
     color: #8a6810;
+    border: 1px solid rgba(199, 154, 58, 0.55);
 }
 .form-filter-btn[data-form-filter="F"] .ff-tag {
-    background: color-mix(in srgb, #4a90b8 25%, transparent);
+    background: rgba(74, 144, 184, 0.22);
     color: #2d6985;
+    border: 1px solid rgba(74, 144, 184, 0.55);
 }
 [data-theme="dark"] .form-filter-btn[data-form-filter="T"] .ff-tag {
     color: #e8c977;

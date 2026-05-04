@@ -844,7 +844,9 @@ function insertBase() {
     showToast("Basis bereits im Rezept vorhanden");
     return;
   }
-  state.current.rows.unshift({ ingId: baseId, qty: 30 });
+  const dosage = BASE_RECIPES[state.current.type].dosagePerKg;
+  const qty = Math.round((state.current.machineCap / 1000) * dosage);
+  state.current.rows.unshift({ ingId: baseId, qty });
   renderIngredientRows();
 }
 
