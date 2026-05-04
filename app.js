@@ -1018,16 +1018,16 @@ function renderProductionLog() {
     let snapshotHtml = "";
     if (e.recipeSnapshot) {
       const s = e.recipeSnapshot;
-      const snapRows = s.rows.map((r) =>
-        `<tr><td>${escapeHtml(r.ingName)}</td><td class="snap-qty">${fmt(r.qty, 0)} g</td></tr>`
-      ).join("");
       const c = s.calc;
+      const snapRows = s.rows.map((r) =>
+        `<tr><td>${escapeHtml(r.ingName)}</td><td class="snap-qty">${c.total > 0 ? fmt(r.qty / c.total * 100, 1) : "—"} %</td></tr>`
+      ).join("");
       snapshotHtml = `
         <details class="prod-snapshot">
           <summary class="prod-snapshot-toggle">Rezept</summary>
           <div class="prod-snapshot-body">
             <table class="snap-table">
-              <thead><tr><th>Zutat</th><th class="snap-qty">Menge</th></tr></thead>
+              <thead><tr><th>Zutat</th><th class="snap-qty">Anteil</th></tr></thead>
               <tbody>${snapRows}</tbody>
             </table>
             <table class="snap-table snap-metrics-table">
