@@ -2,29 +2,6 @@
    GELATO STUDIO — Eis-Bilanzierung
    ============================================================ */
 
-(function injectFormTagStyles() {
-  const s = document.createElement("style");
-  s.textContent = `
-    .form-tag {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      width: 22px !important; height: 22px !important;
-      border-radius: 999px !important;
-      font-size: 11px !important; font-weight: 700 !important;
-      cursor: pointer !important; user-select: none !important;
-    }
-    .form-tag-T { background: rgba(199,154,58,.22) !important; color: #8a6810 !important; border: 1px solid rgba(199,154,58,.45) !important; }
-    .form-tag-F { background: rgba(74,144,184,.22) !important; color: #2d6985 !important; border: 1px solid rgba(74,144,184,.45) !important; }
-    .form-tag-T:hover { background: rgba(199,154,58,.38) !important; }
-    .form-tag-F:hover { background: rgba(74,144,184,.38) !important; }
-    .row-filtered { display: none !important; }
-    .form-filter-btn { cursor: pointer !important; }
-    .form-filter-btn.is-active { background: #fff !important; opacity: 1 !important; box-shadow: 0 1px 3px rgba(0,0,0,.08) !important; }
-  `;
-  document.head.appendChild(s);
-}());
-
 const STORAGE_KEYS = {
   ingredients: "gs_ingredients_v1",
   recipes: "gs_recipes_v1",

@@ -1,0 +1,19 @@
+{
+  "name": "Gelato Studio",
+  "short_name": "Gelato",
+  "description": "Eis-Bilanzierung nach Uwe Koch — PAC, POD, Trockenmasse",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#faf7f1",
+  "theme_color": "#a07a3d",
+  "lang": "de",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

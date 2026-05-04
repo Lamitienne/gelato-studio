@@ -231,7 +231,6 @@ a {
     justify-content: center;
     overflow-x: auto;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
 }
 .topnav::-webkit-scrollbar {
     display: none;
