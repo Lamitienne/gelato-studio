@@ -410,11 +410,10 @@ function calculate(rows, machineCap) {
   };
   if (total <= 0) return empty;
 
-  // Chargenmengen: fixedChargeQty hat Vorrang, sonst proportional skaliert
   const scale = machineCap != null ? machineCap / total : 1;
   const chargeRows = validRows.map((r) => ({
     ...r,
-    chargeQty: r.fixedChargeQty != null ? r.fixedChargeQty : (Number(r.qty) || 0) * scale,
+    chargeQty: (Number(r.qty) || 0) * scale,
   }));
   const chargeTotal = chargeRows.reduce((s, r) => s + r.chargeQty, 0);
 
@@ -465,7 +464,7 @@ function updateFormSummary(total, scale) {
   let dryOrig = 0, liqOrig = 0, dryScaled = 0, liqScaled = 0;
   state.current.rows.forEach((r) => {
     const q = Number(r.qty) || 0;
-    const s = r.fixedChargeQty != null ? r.fixedChargeQty : q * scale;
+    const s = q * scale;
     if (getRowForm(r) === "T") { dryOrig += q; dryScaled += s; }
     else { liqOrig += q; liqScaled += s; }
   });
@@ -548,7 +547,7 @@ function renderIngredientRows() {
     const ing = findIngredient(row.ingId);
     const qtyValue = Number(row.qty) || 0;
     const pct = total > 0 ? (qtyValue / total) * 100 : 0;
-    const scaled = row.fixedChargeQty != null ? row.fixedChargeQty : qtyValue * scale;
+    const scaled = qtyValue * scale;
     tr.innerHTML = cooking ? `
       <td class="col-check">
         <input type="checkbox" class="cooking-check" />
@@ -614,7 +613,7 @@ function renderIngredientRows() {
         const origIdx = +rowInp.dataset.idx;
         const r = state.current.rows[origIdx];
         const rowQty = Number(r.qty) || 0;
-        const rowScaled = r.fixedChargeQty != null ? r.fixedChargeQty : rowQty * scale2;
+        const rowScaled = rowQty * scale2;
         const c = row.querySelectorAll("td.num");
         c[1].textContent =
           total2 > 0 ? fmt((rowQty / total2) * 100, 1) + " %" : "0 %";
@@ -1309,7 +1308,6 @@ function loadRecipe(id) {
   const r = state.recipes.find((x) => x.id === id);
   if (!r) return;
   state.current = JSON.parse(JSON.stringify(r));
-  state.current.rows.forEach((row) => delete row.fixedChargeQty);
   applyCurrentToUI();
   setTab("recipe");
   showToast("Rezept geladen");
