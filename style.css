@@ -633,6 +633,10 @@ textarea:focus {
     color: var(--color-error);
     background: var(--color-error-bg);
 }
+.row-action-edit:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-bg, rgba(74,144,184,0.12));
+}
 
 .empty-row td {
     text-align: center;
