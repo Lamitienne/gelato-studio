@@ -62,7 +62,7 @@ const state = {
     id: null,
     title: "Neues Rezept",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [], // {ingId, qty}
     notes: "",
   },
@@ -1309,7 +1309,7 @@ function newRecipe() {
     id: null,
     title: "Neues Rezept",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [],
     notes: "",
   };
@@ -1623,7 +1623,7 @@ function init() {
     updateBilanz();
   });
   $("#machine-cap").addEventListener("change", (e) => {
-    state.current.machineCap = parseFloat(e.target.value) || 800;
+    state.current.machineCap = parseFloat(e.target.value) || 900;
     renderIngredientRows();
   });
   $("#recipe-title-display").addEventListener("input", (e) => {
