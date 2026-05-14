@@ -1309,6 +1309,7 @@ function loadRecipe(id) {
   const r = state.recipes.find((x) => x.id === id);
   if (!r) return;
   state.current = JSON.parse(JSON.stringify(r));
+  state.current.rows.forEach((row) => delete row.fixedChargeQty);
   applyCurrentToUI();
   setTab("recipe");
   showToast("Rezept geladen");

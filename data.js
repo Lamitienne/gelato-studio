@@ -441,8 +441,6 @@ const DEFAULT_INGREDIENTS = [
     pac: 91.5,
     pod: 32.7,
     stab: 4,
-    isBase: true,
-    baseFor: "milcheis",
   },
   {
     id: "base-frucht",
@@ -454,8 +452,6 @@ const DEFAULT_INGREDIENTS = [
     pac: 112.8,
     pod: 45.1,
     stab: 4,
-    isBase: true,
-    baseFor: "fruchteis",
   },
 ];
 
@@ -510,7 +506,7 @@ const DEFAULT_RECIPES = [
     id: "example_vaniglia",
     title: "Vaniglia Classica",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-milch", qty: 30 },
       { ingId: "vollmilch", qty: 614 },
@@ -530,7 +526,7 @@ const DEFAULT_RECIPES = [
     id: "example_cioccolato",
     title: "Cioccolato Fondente",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-milch", qty: 30 },
       { ingId: "vollmilch", qty: 567 },
@@ -551,7 +547,7 @@ const DEFAULT_RECIPES = [
     id: "example_nocciola",
     title: "Nocciola",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-milch", qty: 30 },
       { ingId: "magermilch", qty: 671 },
@@ -571,7 +567,7 @@ const DEFAULT_RECIPES = [
     id: "example_fiordilatte",
     title: "Fior di Latte",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-milch", qty: 30 },
       { ingId: "vollmilch", qty: 657 },
@@ -592,7 +588,7 @@ const DEFAULT_RECIPES = [
     id: "example_caramel",
     title: "Caramel Salato",
     type: "milcheis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-milch", qty: 30 },
       { ingId: "vollmilch", qty: 555 },
@@ -614,7 +610,7 @@ const DEFAULT_RECIPES = [
     id: "example_fragola",
     title: "Fragola Classica",
     type: "fruchteis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-frucht", qty: 30 },
       { ingId: "erdbeere", qty: 618 },
@@ -634,7 +630,7 @@ const DEFAULT_RECIPES = [
     id: "example_limone",
     title: "Limone",
     type: "fruchteis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-frucht", qty: 30 },
       { ingId: "zitrone-saft", qty: 332 },
@@ -654,7 +650,7 @@ const DEFAULT_RECIPES = [
     id: "example_mango",
     title: "Mango",
     type: "fruchteis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-frucht", qty: 30 },
       { ingId: "mango", qty: 628 },
@@ -674,7 +670,7 @@ const DEFAULT_RECIPES = [
     id: "example_himbeere",
     title: "Himbeere",
     type: "fruchteis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-frucht", qty: 30 },
       { ingId: "himbeere", qty: 620 },
@@ -694,7 +690,7 @@ const DEFAULT_RECIPES = [
     id: "example_heidelbeere",
     title: "Heidelbeere",
     type: "fruchteis",
-    machineCap: 800,
+    machineCap: 900,
     rows: [
       { ingId: "base-frucht", qty: 30 },
       { ingId: "heidelbeere", qty: 599 },
