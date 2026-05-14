@@ -499,22 +499,6 @@ const TARGETS = {
 };
 
 /* ============================================================
-   Basis-Rezepturen nach Uwe Koch „Eismanufaktur“
-   ----
-   Milchbase 30 und Fruchtbase 30 — die Zahl steht für die
-   Menge in Gramm, die pro 1 kg Mix verwendet wird.
-   100 g Basis liefern Bindemittel, Dextrose, Glukose und
-   (bei Milchbase) Magermilchpulver für Bindung und Trockenmasse.
-   Ergänzt wird mit Milch/Sahne (Milcheis) bzw. Fruchtpüree und
-   Saccharose (Fruchteis), je nach gewünschter Sorte.
-   ============================================================ */
-/* ============================================================
-   Bases als Einzelzutaten — vorgemischt verwenden.
-   Empfohlene Menge: 30 g pro kg Mix (Name = „Base 30").
-   Die Vormisch-Rezeptur (Komponenten + Mengen) ist nur zur Info,
-   damit du die Base einmal anrühren und aufbewahren kannst.
-   ============================================================ */
-/* ============================================================
    Beispielrezepte — werden beim ersten Start geladen wenn keine
    eigenen Rezepte im Browser-Speicher vorhanden sind.
    Alle Rezepte sind auf ~800 g Charge bilanziert.
@@ -727,29 +711,3 @@ const DEFAULT_RECIPES = [
     updatedAt: 0,
   },
 ];
-
-const BASE_RECIPES = {
-  milcheis: {
-    label: "Milchbase 30 (nach U. Koch)",
-    ingId: "base-milch",
-    dosagePerKg: 30, // g Base pro 1 kg Mix
-    components: [
-      { ingId: "johannisbrotkernmehl", qty: 2 },
-      { ingId: "guarkernmehl", qty: 2 },
-      { ingId: "dextrose", qty: 32 },
-      { ingId: "glukose-pulver", qty: 32 },
-      { ingId: "magermilchpulver", qty: 32 },
-    ],
-  },
-  fruchteis: {
-    label: "Fruchtbase 30 (nach U. Koch)",
-    ingId: "base-frucht",
-    dosagePerKg: 30,
-    components: [
-      { ingId: "johannisbrotkernmehl", qty: 2 },
-      { ingId: "guarkernmehl", qty: 2 },
-      { ingId: "dextrose", qty: 48 },
-      { ingId: "glukose-pulver", qty: 48 },
-    ],
-  },
-};
