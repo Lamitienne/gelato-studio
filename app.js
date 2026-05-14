@@ -512,7 +512,7 @@ function renderIngredientRows() {
   if (!state.current.rows.length) {
     const tr = document.createElement("tr");
     tr.className = "empty-row";
-    tr.innerHTML = `<td colspan="${cooking ? 3 : 6}">Keine Zutaten — über „+ Zeile" oder „Basis einfügen" hinzufügen.</td>`;
+    tr.innerHTML = `<td colspan="${cooking ? 3 : 6}">Keine Zutaten — über „+ Zeile" hinzufügen.</td>`;
     tbody.appendChild(tr);
     $("#sum-mass").textContent = "0 g";
     $("#sum-scaled").textContent = "0 g";
@@ -835,17 +835,6 @@ function addRow(ingId, qty = 0) {
   renderIngredientRows();
 }
 
-function insertBase() {
-  const baseId = state.current.type === "fruchteis" ? "base-frucht" : "base-milch";
-  if (state.current.rows.some((r) => r.ingId === baseId)) {
-    showToast("Basis bereits im Rezept vorhanden");
-    return;
-  }
-  const recipe = BASE_RECIPES[state.current.type];
-  const fixedChargeQty = Math.round((state.current.machineCap / 1000) * recipe.dosagePerKg);
-  state.current.rows.unshift({ ingId: baseId, qty: recipe.dosagePerKg, fixedChargeQty });
-  renderIngredientRows();
-}
 
 function selectIngredient(id) {
   const ing = findIngredient(id);
@@ -1672,7 +1661,6 @@ function init() {
     });
   });
   $("#add-production").addEventListener("click", () => logProduction({}));
-  $("#insert-base-btn").addEventListener("click", insertBase);
   $("#add-ingredient-row").addEventListener("click", () =>
     $("#ing-search").focus(),
   );
