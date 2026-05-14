@@ -388,7 +388,7 @@ function askForm(title, fields) {
  *   PAC und POD ebenfalls in % der Gesamtmasse, da sie als
  *   Werte pro 100 g Zutat tabelliert sind.
  */
-function calculate(rows) {
+function calculate(rows, machineCap) {
   // Filtere Zeilen mit ungültigen oder fehlenden Zutaten
   const validRows = rows
     .map((r) => ({ ...r, ing: findIngredient(r.ingId) }))
@@ -410,11 +410,18 @@ function calculate(rows) {
   };
   if (total <= 0) return empty;
 
+  // Chargenmengen: fixedChargeQty hat Vorrang, sonst proportional skaliert
+  const scale = machineCap != null ? machineCap / total : 1;
+  const chargeRows = validRows.map((r) => ({
+    ...r,
+    chargeQty: r.fixedChargeQty != null ? r.fixedChargeQty : (Number(r.qty) || 0) * scale,
+  }));
+  const chargeTotal = chargeRows.reduce((s, r) => s + r.chargeQty, 0);
+
   const acc = { ...empty, total, incomplete: validTotal < total };
 
-  for (const r of validRows) {
-    const qty = Number(r.qty) || 0;
-    const f = qty / total;
+  for (const r of chargeRows) {
+    const f = r.chargeQty / chargeTotal;
     acc.ts += f * r.ing.ts;
     acc.fett += f * r.ing.fett;
     acc.zucker += f * r.ing.zucker;
@@ -649,7 +656,7 @@ function renderIngredientRows() {
 
 /* ============== RENDER: BILANZ ============== */
 function updateBilanz() {
-  const r = calculate(state.current.rows);
+  const r = calculate(state.current.rows, state.current.machineCap);
   const targets = { ...TARGETS[state.current.type].metrics };
   // Add Stabilizer target dynamically
   targets.stab = {
@@ -1174,7 +1181,7 @@ function renderLibrary() {
 
   grid.innerHTML = filtered
     .map((rec) => {
-      const calc = calculate(rec.rows);
+      const calc = calculate(rec.rows, rec.machineCap);
       const statusKey = rec.rows.length ? getOverallStatus(calc, rec.type) : "";
       const statusLabel = STATUS_LABELS[statusKey] || "";
 
@@ -1643,7 +1650,7 @@ function init() {
       const ing = findIngredient(r.ingId);
       return { ingId: r.ingId, ingName: ing ? ing.name : r.ingId, qty: r.qty };
     });
-    const snapCalc = calculate(state.current.rows);
+    const snapCalc = calculate(state.current.rows, state.current.machineCap);
     logProduction({
       recipeId: state.current.id,
       recipeName: state.current.title || "Neues Rezept",
