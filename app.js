@@ -1327,6 +1327,12 @@ function applyCurrentToUI() {
   $("#toggle-cooking").hidden = state.current.rows.length === 0;
   $("#log-production").hidden = state.current.rows.length === 0;
 
+  // Reset ingredient search state
+  pendingIngId = null;
+  $("#ing-qty-wrap").hidden = true;
+  $("#ing-search").hidden = false;
+  $("#autocomplete").hidden = true;
+
   // Reset cooking mode UI classes if not active in state
   if (!state.ui.cookingMode) {
     $('section[data-panel="recipe"]').classList.remove("cooking-active");
