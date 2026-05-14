@@ -871,7 +871,7 @@ function logProductionModal(prefill = {}) {
     overlay.className = "modal-overlay";
     overlay.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true">
-        <div class="modal-title">Produktion erfassen</div>
+        <div class="modal-title">${prefill.title || "Produktion erfassen"}</div>
         <form class="modal-form">
           <div class="modal-fields">
             <label class="modal-field">
@@ -1028,6 +1028,7 @@ function renderProductionLog() {
             <span class="prod-date">${dateStr}</span>
             ${typeLabel ? `<span class="tag ${e.recipeType}">${typeLabel}</span>` : ""}
           </div>
+          <button class="row-action" data-edit-prod="${e.id}" aria-label="Eintrag bearbeiten">✎</button>
           <button class="row-action" data-del-prod="${e.id}" aria-label="Eintrag löschen">×</button>
         </div>
         <strong class="prod-recipe-name">${escapeHtml(e.recipeName || "—")}</strong>
@@ -1039,6 +1040,32 @@ function renderProductionLog() {
         ${snapshotHtml}
       </div>`;
   }).join("");
+
+  $$("[data-edit-prod]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const entry = state.productions.find((p) => p.id === btn.dataset.editProd);
+      if (!entry) return;
+      const data = await logProductionModal({
+        title: "Produktion bearbeiten",
+        date: entry.date,
+        recipeName: entry.recipeName,
+        qty: entry.qty,
+        rating: entry.rating,
+        notes: entry.notes,
+      });
+      if (!data) return;
+      Object.assign(entry, {
+        date: data.date,
+        recipeName: data.recipeName,
+        qty: data.qty,
+        rating: data.rating,
+        notes: data.notes,
+      });
+      saveProductions();
+      showToast("Eintrag aktualisiert");
+      renderProductionLog();
+    });
+  });
 
   $$("[data-del-prod]").forEach((btn) => {
     btn.addEventListener("click", async () => {
